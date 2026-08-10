@@ -4,9 +4,9 @@ import io.github.hatoyuze.deepseek.toolcall.executor.ParameterBagSerializer
 import io.github.hatoyuze.deepseek.toolcall.dsl.parametersOf
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
-import io.github.hatoyuze.deepseek.toolcall.executor.ToolResult
 import io.github.hatoyuze.deepseek.toolcall.pipeline.ToolCallHost
 import io.github.hatoyuze.deepseek.toolcall.registry.ToolRegistry
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -96,7 +96,7 @@ class ParameterBagTest {
     }
 
     @Test
-    fun `ToolCallHost schema-driven registration and execution`() {
+    fun `ToolCallHost schema-driven registration and execution`() = runTest {
         val schema = parametersOf {
             string("name") { required = true }
             string("greeting") { }
@@ -114,27 +114,23 @@ class ParameterBagTest {
             arguments = """{"name":"World"}""",
         )
         val ctx = ToolExecutionContext("user1", "session1")
-        var result: ToolResult? = null
-        kotlinx.coroutines.test.runTest { result = host.execute(call, ctx) }
-        val executed = checkNotNull(result)
+        val result = host.execute(call, ctx)
 
-        assertEquals("call_001", executed.toolCallId)
-        assertTrue(executed.content.contains("Hello, World!"))
+        assertEquals("call_001", result.toolCallId)
+        assertTrue(result.content.contains("Hello, World!"))
     }
 
     @Test
-    fun `ToolCallHost returns error for unknown function`() {
+    fun `ToolCallHost returns error for unknown function`() = runTest {
         val schema = parametersOf { string("x") { } }
         val host = ToolCallHost(ToolRegistry())
         host.register("test", "desc", schema = schema) { bag, _ -> bag.getString("x") }
 
         val call = ToolCall("call_002", "unknown", "{}")
         val ctx = ToolExecutionContext("u", "s")
-        var result: ToolResult? = null
-        kotlinx.coroutines.test.runTest { result = host.execute(call, ctx) }
-        val executed = checkNotNull(result)
+        val result = host.execute(call, ctx)
 
-        assertTrue(executed.isError)
-        assertTrue(executed.content.contains("Unknown function"))
+        assertTrue(result.isError)
+        assertTrue(result.content.contains("Unknown function"))
     }
 }
