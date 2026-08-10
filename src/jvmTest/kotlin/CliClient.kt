@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import org.junit.BeforeClass
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
 
@@ -38,15 +39,11 @@ class DeepSeekApiTest {
         @JvmStatic
         @BeforeClass
         fun checkApiKey() {
-            if (resolveApiKey().isBlank()) {
-                error(
-                    """
-                    |DEEPSEEK_API_KEY 未设置！请通过以下任一方式提供：
-                    |  1. 环境变量: export DEEPSEEK_API_KEY=sk-...
-                    |  2. JVM 属性: -Ddeepseek.api.key=sk-...
-                    """.trimMargin()
-                )
-            }
+            // 未配置 key 时跳过（而不是失败），保证 CI 无密钥也能通过
+            assumeTrue(
+                "未配置 DEEPSEEK_API_KEY（环境变量或 -Ddeepseek.api.key），跳过线上集成测试",
+                resolveApiKey().isNotBlank(),
+            )
         }
 
         fun resolveApiKey(): String {

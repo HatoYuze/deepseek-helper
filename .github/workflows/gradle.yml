@@ -29,6 +29,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
+        env:
+          # 未配置 Secret 时为空字符串，线上集成测试（DeepSeekApiTest）会自动跳过
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: ./gradlew build
 
       - name: Upload JVM artifact

@@ -1,3 +1,6 @@
+# 所有文本文件统一以 LF 入库（Windows 检出时按各自 git 配置转换）
+* text=auto
+
 # Shell 脚本统一 LF 行尾并保持可执行
 gradlew text eol=lf
 *.sh text eol=lf
