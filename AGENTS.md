@@ -4,7 +4,7 @@
 
 `deepseek-helper` is a Kotlin Multiplatform (KMP) library with a JVM target that wraps the DeepSeek chat APIs and provides a tool-calling pipeline. Source sets follow the KMP convention:
 
-- `src/commonMain/kotlin/com/github/hatoyuze/` — shared code: `protocol/` (DeepSeek API models, requests, networking), `tool/` (tool-calling DSL, executors, pipeline plugins, registry, serializers)
+- `src/commonMain/kotlin/io/github/hatoyuze/deepseek/` — shared code: `protocol/` (DeepSeek API models, requests, networking), `toolcall/` (tool-calling DSL, executors, pipeline plugins, registry, serializers)
 - `src/jvmMain/kotlin/` — JVM-specific code (Ktor CIO engine, logging)
 - `src/commonTest/kotlin/` and `src/jvmTest/kotlin/` — unit tests
 - `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle/` — build configuration and version catalog
@@ -21,7 +21,7 @@ Requires JDK 17. Always use the Gradle wrapper:
 
 - Use 4-space indentation and keep lines under 120 columns (see `.editorconfig`); IntelliJ defaults are fine
 - Follow the official Kotlin code style (`kotlin.code.style=official` in `gradle.properties`)
-- Package names follow `com.github.hatoyuze.*` (for example, `protocol.api`, `tool.executor`)
+- Package names follow `io.github.hatoyuze.deepseek.*` (for example, `protocol.api`, `toolcall.executor`)
 - Mark experimental or unstable public APIs with `@ExperimentalDeepseekApi`
 - No formatter or linter is configured; match the surrounding code and keep diffs small
 

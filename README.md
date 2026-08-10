@@ -110,7 +110,7 @@ flowchart TD
 <details>
 <summary>了解如何为 ToolCallPipeline 拦截链提供自定义组件</summary>>
 
-`com.github.hatoyuze.tool.pipeline.plugins` 下已经内置了四个插件, 可以使用: `PLUGIN.install(host)` 进行按照
+`io.github.hatoyuze.deepseek.toolcall.pipeline.plugins` 下已经内置了四个插件, 可以使用: `PLUGIN.install(host)` 进行按照
 
 <details>
 <summary>内置插件速览</summary>
@@ -161,7 +161,7 @@ sequenceDiagram
 一个简单的鉴权插件：
 
 ```kotlin
-// import com.github.hatoyuze.tool.pipeline.* / com.github.hatoyuze.tool.dsl.toolHost
+// import io.github.hatoyuze.deepseek.toolcall.pipeline.* / io.github.hatoyuze.deepseek.toolcall.dsl.toolHost
 class AuthPlugin(private val requiredPermission: String) {
 
     fun install(host: ToolCallHost) {
