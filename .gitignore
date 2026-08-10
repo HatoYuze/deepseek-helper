@@ -18,6 +18,7 @@
 *.zip
 *.tar.gz
 *.rar
+!gradle/wrapper/gradle-wrapper.jar
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -25,3 +26,48 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+build/
+
+## IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+
+## Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+*.tmp
+*.bak
+*~
+*.swp
+*.lock
+.vscode/
+*.code-workspace
+nbproject/
+nb-configuration.xml
+dist/
+
+Thumbs.db
+.DS_Store
+.directory
+desktop.ini
+*.orig
+
+# Build output
+/build/
+/.gradle/
+/out/
+
+# Misc downloads
+*.html
+
+# Runtime
+/run/
+/debug-sandbox
+/temp/
