@@ -6,6 +6,7 @@
 
 - `src/commonMain/kotlin/io/github/hatoyuze/deepseek/` — shared code: `protocol/` (DeepSeek API models, requests, networking), `toolcall/` (tool-calling DSL, executors, pipeline plugins, registry, serializers)
 - `src/jvmMain/kotlin/` — JVM-specific code (Ktor CIO engine, logging)
+- `src/androidMain/kotlin/` — Android-specific code (logging via `android.util.Log`, enabled only when an Android SDK is detected)
 - `src/commonTest/kotlin/` and `src/jvmTest/kotlin/` — unit tests
 - `build.gradle.kts`, `gradle/libs.versions.toml`, `gradle/` — build configuration and version catalog
 
