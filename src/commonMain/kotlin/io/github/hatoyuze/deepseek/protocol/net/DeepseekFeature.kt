@@ -24,7 +24,7 @@ public class DeepseekFeatureConfig {
  *
  * @see DeepseekFeatureConfig
  */
-public class DeepseekFeature(val config: DeepseekFeatureConfig) {
+public class DeepseekFeature(public val config: DeepseekFeatureConfig) {
     public companion object : HttpClientPlugin<DeepseekFeatureConfig, DeepseekFeature> {
         override val key: AttributeKey<DeepseekFeature> = AttributeKey("DeepseekFeature")
 

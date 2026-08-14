@@ -13,5 +13,5 @@ package io.github.hatoyuze.deepseek.toolcall.pipeline
 public class PipelineException(
     override val message: String,
     override val cause: Throwable? = null,
-    val isRetryable: Boolean = true,
+    public val isRetryable: Boolean = true,
 ) : Exception(message, cause)

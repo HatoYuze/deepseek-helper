@@ -41,7 +41,7 @@ public enum class ResponseFormat {
  * ```kotlin
  * val config = ChatConfig()
  * // 关闭思考
- * config.thinkingMode = ThinkingMode.Disabled()
+ * config.thinkingMode = ThinkingMode.Disabled
  * // 指定推理强度（或使用 ThinkingMode.Max / ThinkingMode.High 快捷方式）
  * config.thinkingMode = ThinkingMode.High
  * ```

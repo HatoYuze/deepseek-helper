@@ -13,8 +13,9 @@ import io.ktor.sse.ServerSentEvent
 internal class Network(
     internal val host: String,
     private val apiKey: String,
+    private val pool: DeepseekHttpClientPool = DeepseekHttpClientPool.Global,
 ) {
-    private suspend fun net(): HttpClient = DeepseekHttpClientPool.client(host)
+    private suspend fun net(): HttpClient = pool.client(host)
 
     suspend fun execute(
         url: String,
@@ -60,7 +61,9 @@ internal class Network(
             onResponse(this.call.response)
             this.incoming.collect { event ->
                 event.data?.let { data ->
-                    HttpHookRegistry.forEach { hook -> hook.onSseEvent(data) }
+                    if (!HttpHookRegistry.isEmpty()) {
+                        HttpHookRegistry.forEach { hook -> hook.onSseEvent(data) }
+                    }
                 }
                 onEvent(event)
             }

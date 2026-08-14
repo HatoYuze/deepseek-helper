@@ -10,11 +10,15 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlin.concurrent.Volatile
 
 /** 由 [schema] 驱动的 [ParameterBag] 自定义序列化器 */
 public class ParameterBagSerializer(
     private val schema: PropertyDef.ObjectDef,
 ) : KSerializer<ParameterBag> {
+
+    @Volatile
+    private var serializerCache: Map<PropertyDef, KSerializer<*>> = emptyMap()
 
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ParameterBag") {
         for ((name, _) in schema.properties) {
@@ -68,15 +72,13 @@ public class ParameterBagSerializer(
             is PropertyDef.ArrayDef -> {
                 @Suppress("UNCHECKED_CAST")
                 val items = value as List<Any?>
-                val itemsDef = def.items.schema
-                val itemsSerializer = elementSerializer(itemsDef)
                 @Suppress("UNCHECKED_CAST")
-                val listSerializer = ListSerializer(itemsSerializer) as KSerializer<List<Any?>>
+                val listSerializer = elementSerializer(def) as KSerializer<List<Any?>>
                 composite.encodeSerializableElement(desc, idx, listSerializer, items)
             }
             is PropertyDef.ObjectDef -> {
                 val nestedBag = value as ParameterBag
-                val nestedSerializer = ParameterBagSerializer(def)
+                val nestedSerializer = elementSerializer(def) as ParameterBagSerializer
                 composite.encodeSerializableElement(desc, idx, nestedSerializer, nestedBag)
             }
             else -> composite.encodeStringElement(desc, idx, value.toString())
@@ -99,12 +101,12 @@ public class ParameterBagSerializer(
             is PropertyDef.BooleanDef ->
                 composite.decodeBooleanElement(desc, idx)
             is PropertyDef.ArrayDef -> {
-                val itemsDef = def.items.schema
-                val itemsSerializer = elementSerializer(itemsDef)
-                composite.decodeSerializableElement(desc, idx, ListSerializer(itemsSerializer))
+                val itemsSerializer = elementSerializer(def)
+                @Suppress("UNCHECKED_CAST")
+                composite.decodeSerializableElement(desc, idx, itemsSerializer as KSerializer<List<Any?>>)
             }
             is PropertyDef.ObjectDef -> {
-                val nestedSerializer = ParameterBagSerializer(def)
+                val nestedSerializer = elementSerializer(def) as ParameterBagSerializer
                 composite.decodeSerializableElement(desc, idx, nestedSerializer)
             }
             else -> composite.decodeStringElement(desc, idx)
@@ -112,7 +114,12 @@ public class ParameterBagSerializer(
     }
 
 
-    private fun elementSerializer(def: PropertyDef): KSerializer<*> = when (def) {
+    private fun elementSerializer(def: PropertyDef): KSerializer<*> =
+        serializerCache[def] ?: createElementSerializer(def).also {
+            serializerCache = serializerCache + (def to it)
+        }
+
+    private fun createElementSerializer(def: PropertyDef): KSerializer<*> = when (def) {
         is PropertyDef.StringDef, is PropertyDef.EnumDef ->
             kotlinx.serialization.serializer<String>()
         is PropertyDef.IntegerDef ->

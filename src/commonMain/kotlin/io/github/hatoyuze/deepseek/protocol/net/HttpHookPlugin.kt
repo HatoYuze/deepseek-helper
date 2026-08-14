@@ -10,25 +10,30 @@ import kotlin.concurrent.Volatile
  * 常用于调试、日志等横切关注点。采用写时复制（copy-on-write）快照：
  * 遍历始终读取不可变快照，add/remove 通过替换快照完成，
  * 在 JVM/Native 多线程与 JS 单线程下都无需阻塞锁。
+ *
+ * 线程模型：`add`/`remove`/`forEach`/`isEmpty` 可被任意线程安全地并发调用，
+ * 无需外部加锁；遍历期间注册的钩子不会影响本次遍历（基于不可变快照）。
  */
-object HttpHookRegistry {
+public object HttpHookRegistry {
     @Volatile
     private var hooksSnapshot: List<HttpHook> = emptyList()
 
-    fun add(hook: HttpHook) {
+    public fun add(hook: HttpHook) {
         hooksSnapshot = hooksSnapshot + hook
     }
 
-    fun remove(hook: HttpHook) {
+    public fun remove(hook: HttpHook) {
         hooksSnapshot = hooksSnapshot - hook
     }
 
-    fun forEach(action: (HttpHook) -> Unit) {
+    public fun isEmpty(): Boolean = hooksSnapshot.isEmpty()
+
+    public fun forEach(action: (HttpHook) -> Unit) {
         hooksSnapshot.forEach(action)
     }
 }
 
-fun collectHeaders(h: Headers): Map<String, String> {
+internal fun collectHeaders(h: Headers): Map<String, String> {
     val m = mutableMapOf<String, String>()
     h.forEach { n, vs -> m[n] = vs.joinToString(", ") }
     return m

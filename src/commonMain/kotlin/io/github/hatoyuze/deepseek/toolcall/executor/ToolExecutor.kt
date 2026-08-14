@@ -18,7 +18,7 @@ public interface ToolExecutor {
      * @param ctx 执行上下文，包含用户/会话等信息
      * @return [ToolResult] 执行结果，将回填给模型
      */
-    suspend fun execute(call: ToolCall, ctx: ToolExecutionContext): ToolResult
+    public suspend fun execute(call: ToolCall, ctx: ToolExecutionContext): ToolResult
 }
 
 /**

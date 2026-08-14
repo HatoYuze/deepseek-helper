@@ -9,6 +9,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
 import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
+import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.toolcall.DEEPSEEK_WEB_SEARCH_TOOL
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCallType
@@ -26,10 +27,13 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-internal class DeepseekResponsesApiImpl(apiKey: String) :
-    DeepseekApiBase(
+internal class DeepseekResponsesApiImpl(
+    apiKey: String,
+    pool: DeepseekHttpClientPool,
+) : DeepseekApiBase(
         apiKey = apiKey,
         baseUrl = "https://api.deepseek.com",
+        pool = pool,
     ) {
 
     @OptIn(ExperimentalDeepseekApi::class)

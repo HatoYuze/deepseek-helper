@@ -85,6 +85,9 @@ public suspend fun Flow<ChatChunk>.collectResponse(): ChatResponse {
                     promptTokens = chunk.promptTokens,
                     completionTokens = chunk.completionTokens,
                     totalTokens = chunk.totalTokens,
+                    promptCacheHitTokens = chunk.promptCacheHitTokens,
+                    promptCacheMissTokens = chunk.promptCacheMissTokens,
+                    reasoningTokens = chunk.reasoningTokens,
                 )
                 finishReason = chunk.finishReason
             }

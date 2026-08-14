@@ -5,9 +5,11 @@ import com.github.ajalt.mordant.rendering.TextStyles.*
 import com.github.ajalt.mordant.terminal.Terminal
 import io.github.hatoyuze.deepseek.protocol.api.Deepseek
 import io.github.hatoyuze.deepseek.protocol.api.DeepseekApi
+import io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
 import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.api.collectResponse
+import io.github.hatoyuze.deepseek.protocol.api.collectFimResponse
 import io.github.hatoyuze.deepseek.protocol.api.deepseek
 import io.github.hatoyuze.deepseek.protocol.api.onContent
 import io.github.hatoyuze.deepseek.protocol.api.onThinking
@@ -34,6 +36,7 @@ private data class WeatherData(val city: String, val weather: String, val temper
 @Serializable
 private data class CalcResult(val a: Double, val b: Double, val operation: String, val result: Double)
 
+@OptIn(ExperimentalDeepseekApi::class)
 class DeepSeekApiTest {
 
     companion object {
@@ -386,6 +389,26 @@ class DeepSeekApiTest {
             println("✅ 工具调用次数: ${response.toolCalls.size}")
 
             assert(response.content.isNotBlank()) { "应得到计算结果相关的回复" }
+        }
+    }
+
+    @Test
+    fun `fim stream returns a completion`() = runBlocking {
+        withTimeout(90.seconds) {
+            val ds = deepseek(apiKey) {
+                model { pro() }
+            }
+
+            val response = ds.fimStream(
+                prompt = "def add(a, b):",
+                suffix = "    return a + b",
+            ).collectFimResponse()
+
+            println("\n✅ FIM 回复: ${response.text.take(80)}...")
+            println("✅ FIM 用量: ${response.usage.totalTokens} tokens")
+
+            assert(response.text.isNotBlank()) { "FIM 补全不应为空" }
+            assert(response.usage.totalTokens > 0) { "FIM 用量应 > 0" }
         }
     }
 }

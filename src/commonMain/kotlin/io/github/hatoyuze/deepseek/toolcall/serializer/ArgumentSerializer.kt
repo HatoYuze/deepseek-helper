@@ -64,7 +64,7 @@ public open class KotlinxArgumentSerializer<T : Any>(
  * 框架会据此生成对模型友好的错误 [ToolResult]。
  */
 public class ArgumentDeserializationException(
-    val rawJson: String,
+    public val rawJson: String,
     override val message: String,
     override val cause: Throwable? = null,
 ) : Exception(message, cause)

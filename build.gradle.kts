@@ -4,12 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.maven.publish)
+    alias(libs.plugins.binary.compatibility.validator)
     alias(libs.plugins.android.library) apply false
 }
 
 // Central Portal 命名空间为 io.github.<GitHub 用户名>，与包名 io.github.hatoyuze.deepseek.* 无关
 group = "io.github.hatoyuze"
-version = "0.1.1"
+version = "0.2.0"
 
 // Android target 仅在检测到 Android SDK 时启用：
 // 本机无 SDK 时构建行为与之前完全一致；CI runner（自带 SDK）会自动编译并发布 Android AAR。
@@ -33,6 +34,9 @@ repositories {
 
 @OptIn(ExperimentalWasmDsl::class)
 kotlin {
+    // 固定 JDK 17 工具链，保证字节码目标与 CI 一致，避免本机 JDK 漂移
+    jvmToolchain(17)
+
     jvm()
     if (androidEnabled) {
         // 经典 AGP 路线；Kotlin 2.3 对 androidTarget 的 deprecation 警告可接受
@@ -63,6 +67,9 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
+
+    // 强制公共声明显式标注可见性，防止 internal 泄漏为公共 API
+    explicitApi()
 
     sourceSets {
         commonMain.dependencies {
@@ -104,6 +111,7 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
 
         jvmTest.dependencies {

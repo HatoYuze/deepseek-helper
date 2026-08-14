@@ -14,6 +14,10 @@ import kotlin.time.Duration.Companion.milliseconds
  * 非 [PipelineException] 的异常会自动包装为可重试的 [PipelineException]；
  * [kotlinx.coroutines.CancellationException] 会原样向上传播，不会被包装或重试。
  *
+ * 退避延迟按指数增长：第 n 次重试前等待 `baseDelayMs × backoffMultiplier^(n-1)` 毫秒。
+ * 洋葱模型下，`retry` 重试的是其后整条 EXECUTE 链：声明在 `retry` 之前的插件
+ * （如 `timeout`）对每次尝试各自生效，声明在其之后的插件则包裹整轮重试。
+ *
  * ```kotlin
  * val host = toolHost {
  *     tool("flaky") { ... }
@@ -33,11 +37,12 @@ public class RetryPlugin(
     /** 安装到指定的 [ToolCallHost] */
     public fun install(host: ToolCallHost) {
         host.intercept(ToolCallPhase.EXECUTE) { ctx ->
-            val coreIndex = ctx.phaseInterceptors.lastIndex
+            val nextIndex = ctx.interceptorIndex
+            var backoff = baseDelayMs
             var lastError: PipelineException? = null
             for (attempt in 1..maxAttempts) {
                 try {
-                    ctx.interceptorIndex = coreIndex
+                    ctx.interceptorIndex = nextIndex
                     ctx.proceed()
                     return@intercept
                 } catch (e: CancellationException) {
@@ -46,7 +51,8 @@ public class RetryPlugin(
                     if (!e.isRetryable) throw e
                     lastError = e
                     if (attempt < maxAttempts) {
-                        delay((baseDelayMs * attempt * backoffMultiplier).milliseconds)
+                        delay(backoff.milliseconds)
+                        backoff *= backoffMultiplier
                     }
                 } catch (e: Exception) {
                     if (e is IllegalArgumentException) throw PipelineException(
@@ -58,7 +64,8 @@ public class RetryPlugin(
                         isRetryable = true,
                     )
                     if (attempt < maxAttempts) {
-                        delay((baseDelayMs * attempt * backoffMultiplier).milliseconds)
+                        delay(backoff.milliseconds)
+                        backoff *= backoffMultiplier
                     }
                 }
             }

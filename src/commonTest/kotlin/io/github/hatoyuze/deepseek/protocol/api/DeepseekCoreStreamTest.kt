@@ -49,7 +49,6 @@ class DeepseekCoreStreamTest {
             apiKey = "k",
             model = null,
             prompt = "sys",
-            enableBeta = false,
             config = ChatConfig(),
             api = DeepseekApi.STANDARD,
             backend = FailingBackend(),
@@ -59,7 +58,9 @@ class DeepseekCoreStreamTest {
         }
 
         assertFailsWith<IllegalStateException> {
-            core.streamFlow { streamLoop(core, history, "hello", null) }.collect { }
+            core.streamFlow { session ->
+                streamLoop(core, history, "hello", null, session)
+            }.collect { }
         }
 
         assertEquals(1, history.size, "失败后应回滚 user 消息，仅剩 system prompt")
@@ -72,17 +73,18 @@ class DeepseekCoreStreamTest {
             apiKey = "k",
             model = null,
             prompt = null,
-            enableBeta = false,
             config = ChatConfig(),
             api = DeepseekApi.STANDARD,
             backend = TwoDoneBackend(),
         )
-        val seen = mutableListOf<ChatChunk>()
-        val flowSeen = mutableListOf<ChatChunk>()
+        val seen = mutableListOf<Chunk>()
+        val flowSeen = mutableListOf<Chunk>()
         val history = mutableListOf<Message>()
         val hook = SseHook { seen.add(it) }
 
-        core.streamFlow { streamLoop(core, history, "hi", hook) }.collect { flowSeen.add(it) }
+        core.streamFlow { session ->
+            streamLoop(core, history, "hi", hook, session)
+        }.collect { flowSeen.add(it) }
 
         assertEquals(seen, flowSeen, "hook 与 Flow 事件应完全一致")
         val dones = seen.filterIsInstance<ChatChunk.Done>()

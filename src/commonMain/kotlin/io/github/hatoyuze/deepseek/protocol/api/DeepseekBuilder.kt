@@ -1,6 +1,8 @@
 package io.github.hatoyuze.deepseek.protocol.api
 
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
+import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
+import io.github.hatoyuze.deepseek.protocol.net.config
 import io.github.hatoyuze.deepseek.toolcall.dsl.ToolHostBuilder
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
 
@@ -18,7 +20,7 @@ import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
  *     config {
  *         maxTokens = 2048
  *         temperature = 0.7
- *         thinkingMode = ThinkingMode.Disabled()
+ *         thinkingMode = ThinkingMode.Disabled
  *         responseFormat = ResponseFormat.JSON_OBJECT
  *     }
  *
@@ -29,7 +31,7 @@ import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
  *                 string("city") { required = true }
  *             }
  *             execute { bag, _ ->
- *                 WeatherResult(city = bag["city"] as String, weather = "晴", temp = 25)
+ *                 WeatherResult(city = bag.getString("city"), weather = "晴", temp = 25)
  *             }
  *         }
  *         retry(maxAttempts = 3)
@@ -110,11 +112,11 @@ public class DeepseekBuilder {
     /** 系统 prompt，对应 system role 的初始消息 */
     public var prompt: String? = null
 
-    /** 启用 Beta API endpoint */
-    public var enableBeta: Boolean = false
-
     /** 使用的 API wire format，默认 [DeepseekApi.STANDARD] */
     public var api: DeepseekApi = DeepseekApi.STANDARD
+
+    /** 客户端共享的 HttpClient 池，默认使用 [DeepseekHttpClientPool.Global] */
+    public var sharingPool: DeepseekHttpClientPool = DeepseekHttpClientPool.Global
 
     /** 工具执行上下文，包含用户/会话等元信息 */
     public var executionContext: ToolExecutionContext = ToolExecutionContext("", "")
@@ -149,7 +151,7 @@ public class DeepseekBuilder {
      * config {
      *     maxTokens = 4096
      *     temperature = 0.7
-     *     thinkingMode = ThinkingMode.Disabled()
+     *     thinkingMode = ThinkingMode.Disabled
      * }
      * ```
      *
@@ -160,6 +162,33 @@ public class DeepseekBuilder {
     }
 
     /**
+     * 配置当前客户端使用的 [DeepseekHttpClientPool]。
+     *
+     * **IMPORTANT** 当 [sharingPool] 为 [DeepseekHttpClientPool.Global] 时，
+     * 本方法会先复制出实例级池再应用 [block]，避免修改全局共享配置影响其他客户端。
+     *
+     * Example:
+     * ```kotlin
+     * deepseek("sk-xxx") {
+     *     pool {
+     *         config {
+     *             maxRetries = 2
+     *             socketTimeoutMillis = null
+     *         }
+     *     }
+     * }
+     * ```
+     *
+     * @param block 池配置 lambda，receiver 为 [DeepseekHttpClientPool]
+     */
+    public fun pool(block: DeepseekHttpClientPool.() -> Unit) {
+        if (sharingPool === DeepseekHttpClientPool.Global) {
+            sharingPool = DeepseekHttpClientPool(sharingPool.config, sharingPool.factory)
+        }
+        sharingPool.apply(block)
+    }
+
+    /**
      * 注册工具并配置管道插件。
      *
      * ```kotlin
@@ -167,7 +196,7 @@ public class DeepseekBuilder {
      *     tool("search") {
      *         description = "搜索互联网"
      *         parameters { string("q") { required = true } }
-     *         execute { bag, _ -> search(bag["q"] as String) }
+     *         execute { bag, _ -> search(bag.getString("q")) }
      *     }
      *     retry(maxAttempts = 3)
      *     timeout(5000)
@@ -188,9 +217,9 @@ public class DeepseekBuilder {
             apiKey,
             model = model,
             prompt = prompt,
-            enableBeta = enableBeta,
             config = config,
             api = api,
+            sharingPool = sharingPool,
         ).applyBuilderState()
     }
 
@@ -199,9 +228,9 @@ public class DeepseekBuilder {
             apiKey,
             model = model,
             prompt = prompt,
-            enableBeta = enableBeta,
             config = config,
             api = api,
+            sharingPool = sharingPool,
         ).applyBuilderState()
     }
 

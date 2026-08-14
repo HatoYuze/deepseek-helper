@@ -42,7 +42,7 @@ import kotlinx.serialization.serializer
 public class ToolCallHost(
     private val registry: ToolRegistry,
 ) {
-    public val pipeline = ToolCallPipeline()
+    public val pipeline: ToolCallPipeline = ToolCallPipeline()
 
     // ── 工具注册 ──
 

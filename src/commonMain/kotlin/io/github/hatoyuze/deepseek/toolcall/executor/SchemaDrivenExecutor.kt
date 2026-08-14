@@ -1,9 +1,6 @@
 package io.github.hatoyuze.deepseek.toolcall.executor
 
-import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
-import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
-import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutor
-import io.github.hatoyuze.deepseek.toolcall.executor.ToolResult
+import io.github.hatoyuze.deepseek.toolcall.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 
@@ -15,6 +12,7 @@ internal class SchemaDrivenExecutor(
 
     private val json = Json { ignoreUnknownKeys = true }
     private val bagSerializer = serializer
+    private val logger = Logger("SchemaDrivenExecutor")
 
     override suspend fun execute(call: ToolCall, ctx: ToolExecutionContext): ToolResult {
         val bag = try {
@@ -29,7 +27,7 @@ internal class SchemaDrivenExecutor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error { "Tool '${call.name}' execution failed: ${e.message}" }
             ToolResult.error(call.id, "ToolError[${e::class.simpleName}]: ${e.message ?: "Execution failed"}")
         }
     }

@@ -27,7 +27,7 @@ import kotlinx.serialization.serializer
  *             string("city") { required = true }
  *         }
  *         execute { bag, _ ->
- *             WeatherResult(city = bag["city"] as String, weather = "晴", temp = 25)
+ *             WeatherResult(city = bag.getString("city"), weather = "晴", temp = 25)
  *         }
  *     }
  *     retry(maxAttempts = 3)
@@ -124,7 +124,7 @@ public class ToolHostBuilder {
  *         string("q") { required = true }
  *     }
  *     execute { bag, _ ->
- *         searchResults(bag["q"] as String)
+ *         searchResults(bag.getString("q"))
  *     }
  * }
  * ```
@@ -138,6 +138,12 @@ public class ToolBuilder(private val name: String) {
 
     @PublishedApi internal var paramsBlock: (ParametersBuilder.() -> Unit)? = null
     @PublishedApi internal var handlerBlock: (suspend (ParameterBag, ToolExecutionContext) -> String)? = null
+
+    @PublishedApi
+    internal val schema: PropertyDef.ObjectDef by lazy {
+        paramsBlock?.let { ParametersBuilder().apply(it).build() }
+            ?: PropertyDef.ObjectDef(emptyMap())
+    }
 
     /**
      * 定义工具的参数 schema。
@@ -166,7 +172,7 @@ public class ToolBuilder(private val name: String) {
      * data class WeatherResult(val city: String, val weather: String)
      *
      * execute { bag, _ ->
-     *     WeatherResult(city = bag["city"] as String, weather = "晴")
+     *     WeatherResult(city = bag.getString("city"), weather = "晴")
      * }
      * ```
      *
@@ -185,15 +191,11 @@ public class ToolBuilder(private val name: String) {
 
     internal val definition: ToolDefinition
         get() {
-            val schema = paramsBlock?.let { ParametersBuilder().apply(it).build() }
-                ?: PropertyDef.ObjectDef(emptyMap())
             return ToolDefinition.from(name, description, strict, schema)
         }
 
     internal val executor: ToolExecutor
         get() {
-            val schema = paramsBlock?.let { ParametersBuilder().apply(it).build() }
-                ?: PropertyDef.ObjectDef(emptyMap())
             val handler = handlerBlock
                 ?: throw IllegalStateException("execute { } block is required for tool '$name'")
             return SchemaDrivenExecutor(schema, ParameterBagSerializer(schema), handler)

@@ -6,6 +6,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 @OptIn(ExperimentalDeepseekApi::class)
 class ReasoningStripTest {
@@ -26,5 +27,18 @@ class ReasoningStripTest {
         val original = Message(Role.Assistance, null, toolCalls = emptyList())
         val stripped = listOf(original).withoutReasoningContent()
         assertEquals(emptyList(), stripped[0].toolCalls)
+    }
+
+    @Test
+    fun `withoutReasoningContent returns the same list when nothing to strip`() {
+        val messages = listOf(
+            Message(Role.User, "hello"),
+            Message(Role.Assistance, "hi"),
+        )
+
+        val stripped = messages.withoutReasoningContent()
+
+        assertEquals(messages, stripped)
+        assertSame(messages, stripped, "无 reasoningContent 时不应复制消息列表")
     }
 }

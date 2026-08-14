@@ -5,6 +5,7 @@ import io.github.hatoyuze.deepseek.protocol.api.ChatConfig
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
 import io.github.hatoyuze.deepseek.protocol.api.entity.UserBalance
+import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.protocol.net.HttpHookRegistry
 import io.github.hatoyuze.deepseek.protocol.net.Network
 import io.github.hatoyuze.deepseek.protocol.net.collectHeaders
@@ -40,9 +41,10 @@ internal interface DeepseekApiBackend {
 internal abstract class DeepseekApiBase(
     apiKey: String,
     baseUrl: String,
+    pool: DeepseekHttpClientPool,
 ) : DeepseekApiBackend {
 
-    protected val net = Network(baseUrl, apiKey)
+    protected val net = Network(baseUrl, apiKey, pool)
 
     override suspend fun models(): List<Model> {
         @Serializable
@@ -53,6 +55,12 @@ internal abstract class DeepseekApiBase(
     override suspend fun userBalance(): UserBalance = net.call("/user/balance")
 }
 
+/**
+ * 进程级 SSE 解析错误调试槽。
+ *
+ * 仅保存最近一次解析失败的原始片段（last-writer-wins）；非线程安全，
+ * 仅供本地调试，不构成任何 API 契约。
+ */
 internal object DeepseekSseErrors {
     var lastSseError: String? = null
 }

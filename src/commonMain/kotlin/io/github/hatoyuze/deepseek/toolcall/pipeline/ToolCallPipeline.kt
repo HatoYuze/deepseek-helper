@@ -33,15 +33,14 @@ public class ToolCallPipeline {
     /** 按 phase 顺序执行所有拦截器，返回最终 [ToolResult] */
     public suspend fun execute(context: PipelineContext): ToolResult {
         try {
-            while (context.phaseIndex < context.orderedPhases.size) {
-                val phase = context.orderedPhases[context.phaseIndex]
+            while (context.phaseIndex < PipelineContext.ORDERED_PHASES.size) {
+                val phase = PipelineContext.ORDERED_PHASES[context.phaseIndex]
                 context.currentPhase = phase
                 val interceptors = phases[phase]!!
                 if (interceptors.isEmpty()) {
                     context.phaseIndex++
                     continue
                 }
-                context.interceptorIndex = 0
                 context.phaseInterceptors = interceptors
                 context.interceptorIndex = 1
                 interceptors[0](context)

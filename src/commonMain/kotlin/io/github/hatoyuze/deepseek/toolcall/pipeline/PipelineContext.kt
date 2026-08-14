@@ -15,10 +15,10 @@ import io.github.hatoyuze.deepseek.toolcall.registry.ToolRegistry
  * @param registry 工具注册中心
  */
 public class PipelineContext(
-    val call: ToolCall,
-    val executor: ToolExecutor,
-    val executionContext: ToolExecutionContext,
-    val registry: ToolRegistry,
+    public val call: ToolCall,
+    public val executor: ToolExecutor,
+    public val executionContext: ToolExecutionContext,
+    public val registry: ToolRegistry,
 ) {
     /** 最终执行结果，在管道执行完毕后设置 */
     public var result: ToolResult? = null
@@ -39,10 +39,11 @@ public class PipelineContext(
     internal var interceptorIndex: Int = 0
 
     @PublishedApi
-    internal val orderedPhases: List<ToolCallPhase> = ToolCallPhase.entries.toList()
-
-    @PublishedApi
     internal lateinit var phaseInterceptors: List<suspend (PipelineContext) -> Unit>
+
+    public companion object {
+        internal val ORDERED_PHASES: List<ToolCallPhase> = ToolCallPhase.entries.toList()
+    }
 
     /**
      * 推进到当前 phase 的下一个拦截器。

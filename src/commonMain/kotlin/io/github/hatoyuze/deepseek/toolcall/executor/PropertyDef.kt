@@ -15,13 +15,13 @@ public sealed class PropertyDef {
 
     /** 数字基类，携带通用数值约束 */
     public sealed class NumberDef<T : Number>(
-        val minimum: T? = null,
-        val maximum: T? = null,
-        val exclusiveMinimum: T? = null,
-        val exclusiveMaximum: T? = null,
-        val multipleOf: T? = null,
-        val default: T? = null,
-        val const: T? = null,
+        public val minimum: T? = null,
+        public val maximum: T? = null,
+        public val exclusiveMinimum: T? = null,
+        public val exclusiveMaximum: T? = null,
+        public val multipleOf: T? = null,
+        public val default: T? = null,
+        public val const: T? = null,
     ) : PropertyDef()
 
     /** 浮点数约束 */

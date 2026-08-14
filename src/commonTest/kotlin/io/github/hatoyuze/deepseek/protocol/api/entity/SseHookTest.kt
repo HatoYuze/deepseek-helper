@@ -2,6 +2,7 @@ package io.github.hatoyuze.deepseek.protocol.api.entity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import io.github.hatoyuze.deepseek.protocol.api.ChatChunk
+import io.github.hatoyuze.deepseek.protocol.api.Chunk
 import io.github.hatoyuze.deepseek.protocol.api.SseHook
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -10,7 +11,7 @@ class SseHookTest {
 
     @Test
     fun `receives each emitted chunk`() = runTest {
-        val received = mutableListOf<ChatChunk>()
+        val received = mutableListOf<Chunk>()
         val hook = SseHook { chunk -> received.add(chunk) }
 
         // 模拟 SSE 流中的 chunk 回调

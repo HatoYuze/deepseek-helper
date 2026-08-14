@@ -101,9 +101,9 @@ public object ToolCallSerializer : KSerializer<ToolCall> {
  */
 @Serializable
 public open class ToolExecutionContext(
-    val userId: String,
-    val sessionId: String,
-    val permissions: Set<String> = emptySet(),
+    public val userId: String,
+    public val sessionId: String,
+    public val permissions: Set<String> = emptySet(),
 )
 
 /**
@@ -115,7 +115,7 @@ public class ToolCallContext(
     userId: String,
     sessionId: String,
     permissions: Set<String> = emptySet(),
-    val typedParams: Any? = null,
+    public val typedParams: Any? = null,
 ) : ToolExecutionContext(userId, sessionId, permissions) {
     public companion object {
         /** 将基础上下文包装为携带预解析参数的类型化上下文 */

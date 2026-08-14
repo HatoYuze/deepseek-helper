@@ -33,8 +33,9 @@ jobs:
           # 未配置 Secret 时为空字符串，线上集成测试（DeepSeekApiTest）会自动跳过
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         # 排除浏览器端测试（karma/headless chrome 在 CI 上不稳定）；
-        # 其他跨平台原生测试会被 Gradle 在不支持的宿主机上自动跳过
-        run: ./gradlew build -x jsBrowserTest
+        # 其他跨平台原生测试会被 Gradle 在不支持的宿主机上自动跳过；
+        # apiCheck 校验公共 API 与 api/ 基线一致（binary-compatibility-validator）
+        run: ./gradlew build apiCheck -x jsBrowserTest
 
       - name: Upload JVM artifact
         uses: actions/upload-artifact@v4

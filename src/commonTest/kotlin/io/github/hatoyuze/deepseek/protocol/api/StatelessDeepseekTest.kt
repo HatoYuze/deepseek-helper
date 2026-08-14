@@ -1,9 +1,12 @@
 package io.github.hatoyuze.deepseek.protocol.api
 
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.Model
 import io.github.hatoyuze.deepseek.protocol.api.entity.ReasoningEffort
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
+import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
+import io.github.hatoyuze.deepseek.protocol.net.config
 import io.github.hatoyuze.deepseek.toolcall.dsl.parametersOf
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.pipeline.ToolCallHost
@@ -11,8 +14,10 @@ import io.github.hatoyuze.deepseek.toolcall.registry.ToolRegistry
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalDeepseekApi::class)
 class StatelessDeepseekTest {
 
     @Test
@@ -51,6 +56,30 @@ class StatelessDeepseekTest {
 
         assertTrue(ds.config === shared)
         assertEquals(512, ds.config.maxTokens)
+    }
+
+    @Test
+    fun `modelForFim defaults to Pro and can be overridden`() {
+        val ds = statelessDeepseek("sk-test-key") { }
+
+        assertEquals(Model.Pro, ds.modelForFim)
+
+        ds.modelForFim = Model.Flash
+        assertEquals(Model.Flash, ds.modelForFim)
+    }
+
+    @Test
+    fun `pool DSL creates an instance pool when using Global`() {
+        val ds = statelessDeepseek("sk-test-key") {
+            pool {
+                config {
+                    maxRetries = 2
+                }
+            }
+        }
+
+        assertNotSame(DeepseekHttpClientPool.Global, ds.sharingPool)
+        assertEquals(2, ds.sharingPool.config.maxRetries)
     }
 
     @Test

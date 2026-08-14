@@ -8,6 +8,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
 import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekApiBackend
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
+import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.protocol.api.entity.UserBalance
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
@@ -23,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
  * val ds = Deepseek("sk-xxx")
  * ds.config.maxTokens = 2048
  * ds.config.temperature = 0.7
- * ds.config.thinkingMode = ThinkingMode.Disabled()
+ * ds.config.thinkingMode = ThinkingMode.Disabled
  * ds.config.responseFormat = ResponseFormat.JSON_OBJECT
  * ```
  *
@@ -38,15 +39,15 @@ import kotlinx.coroutines.flow.Flow
  * }
  * ```
  */
-class ChatConfig {
+public class ChatConfig {
     /** 最大生成 token 数，`null` 表示不限制 */
-    var maxTokens: Int? = null
+    public var maxTokens: Int? = null
 
     /** 采样温度，范围 `(0, 2]`，越高越随机 */
-    var temperature: Double? = null
+    public var temperature: Double? = null
 
     /** 核采样参数，范围 `(0, 1]` */
-    var topP: Double? = null
+    public var topP: Double? = null
 
     /**
      * 思考模式。
@@ -55,7 +56,7 @@ class ChatConfig {
      * - [io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode.Disabled] — 关闭思考，不发送 reasoning_content
      * - [io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode.WithEffort] — 指定推理强度
      */
-    var thinkingMode: ThinkingMode? = null
+    public var thinkingMode: ThinkingMode? = null
 
     /**
      * 响应格式。
@@ -63,10 +64,10 @@ class ChatConfig {
      * - `null` — 默认 text
      * - [io.github.hatoyuze.deepseek.protocol.api.entity.ResponseFormat.JSON_OBJECT] — 强制模型输出合法 JSON
      */
-    var responseFormat: ResponseFormat? = null
+    public var responseFormat: ResponseFormat? = null
 
     /** 停止词。`null` 表示不设置 */
-    var stop: StopToken? = null
+    public var stop: StopToken? = null
 
     /**
      * 工具调用策略。
@@ -77,16 +78,16 @@ class ChatConfig {
      * - [io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice.Required] — 必须调用工具
      * - [io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice.Named] — 强制调用指定工具
      */
-    var toolChoice: ToolChoice? = null
+    public var toolChoice: ToolChoice? = null
 
     /** 是否在响应中返回 token 用量统计，默认 `true` */
-    var includeUsage: Boolean = true
+    public var includeUsage: Boolean = true
 
     /** 是否返回输出 token 的对数概率 */
-    var logprobs: Boolean? = null
+    public var logprobs: Boolean? = null
 
     /** `0` 到 `20` 之间，每个输出 token 返回的对数概率数量 */
-    var topLogprobs: Int? = null
+    public var topLogprobs: Int? = null
 
     /**
      * 是否启用服务端联网搜索（内置 `web_search` 工具）。
@@ -95,10 +96,10 @@ class ChatConfig {
      * 开启后，请求的 `tools` 会追加 `{"type":"web_search"}`，模型可自主发起联网搜索；
      * 搜索结果由服务端在同一流内完成，库不会因 `web_search_call` 发起下一轮请求。
      */
-    var enableWebSearch: Boolean = false
+    public var enableWebSearch: Boolean = false
 
     /** 工具调用最大迭代次数，防止无限循环，默认 `15` */
-    var maxToolIterations: Int = 15
+    public var maxToolIterations: Int = 15
 }
 
 /**
@@ -183,7 +184,7 @@ public interface ChatClient {
  * @property apiKey DeepSeek API 密钥，从 [DeepSeek 平台](https://platform.deepseek.com) 获取
  * @param model 指定使用的模型；为 `null` 时使用库内硬编码的 [Model.Flash]，不会发起网络请求
  * @property prompt 系统提示词，作为对话历史中的初始 system 消息；为 `null` 时历史以第一条用户消息开始
- * @param enableBeta 是否使用 Beta API endpoint（在原请求 baseurl 基础上加一个 `/beta`）
+ * @param sharingPool 客户端共享的 HttpClient 池，默认使用 [DeepseekHttpClientPool.Global]
  * @property config 对话补全控制参数，修改后对后续所有请求生效
  * @param api 使用的 API wire format（[DeepseekApi.STANDARD] 或 [DeepseekApi.RESPONSES]）
  *
@@ -195,13 +196,29 @@ public open class Deepseek(
     public override val apiKey: String,
     model: Model? = null,
     internal val prompt: String? = null,
-    private val enableBeta: Boolean = false,
     public override val config: ChatConfig = ChatConfig(),
     private val api: DeepseekApi = DeepseekApi.STANDARD,
+    public val sharingPool: DeepseekHttpClientPool = DeepseekHttpClientPool.Global,
 ) : ChatClient {
 
     /** 共享的客户端核心（网络后端、取消机制与流式对话循环） */
-    internal val core: DeepseekCore = DeepseekCore(apiKey, model, prompt, enableBeta, config, api)
+    internal var core: DeepseekCore = DeepseekCore(
+        apiKey = apiKey,
+        model = model,
+        prompt = prompt,
+        config = config,
+        api = api,
+        sharingPool = sharingPool,
+        singleSession = true,
+    )
+
+    /**
+     * 测试注入内部构造：允许用 Fake 后端/核心构建客户端而不触网。
+     * 不改变公开构造签名。
+     */
+    internal constructor(apiKey: String, core: DeepseekCore) : this(apiKey) {
+        this.core = core
+    }
 
     /** 按 [api] 选择对应的 wire format 后端实现 */
     internal val backend: DeepseekApiBackend get() = core.backend
@@ -221,20 +238,20 @@ public open class Deepseek(
      *         description = "获取指定城市的天气"
      *         parameters { string("city") { required = true } }
      *         execute { bag, _ ->
-     *             WeatherResult(city = bag["city"] as String, weather = "晴", temp = 25)
+     *             WeatherResult(city = bag.getString("city"), weather = "晴", temp = 25)
      *         }
      *     }
      * }
      * ```
      */
-    override var toolHost: ToolCallHost?
+    public override var toolHost: ToolCallHost?
         get() = core.toolHost
         set(value) {
             core.toolHost = value
         }
 
     /** 工具执行上下文（用户/会话/权限等元信息），供每次工具调用时使用 */
-    override var executionContext: ToolExecutionContext
+    public override var executionContext: ToolExecutionContext
         get() = core.executionContext
         set(value) {
             core.executionContext = value
@@ -243,22 +260,14 @@ public open class Deepseek(
     /** 系统提示词对应的初始 system 消息；未设置 prompt 时为 `null` */
     internal val systemPromptMessage: Message? get() = core.systemPromptMessage
 
-    /** 取消标志：由 [cancelStream] 置位，每次流式调用开始时自动复位 */
-    public var isCancelled: Boolean
-        get() = core.isCancelled
-        set(value) {
-            core.isCancelled = value
-        }
-
     /**
-     * 中断当前正在进行的 [chatStream] 流。
+     * 中断当前正在进行的流（[chatStream]、[continueStream] 或 [fimStream]）。
      *
-     * 除设置取消标志外，还会取消当前流的收集协程，级联中止底层 HTTP 请求：
-     * 连接被关闭，服务端停止生成，不再继续消耗 token。
-     * 下一次 [chatStream] / [continueStream] 调用会自动重置取消状态；
+     * `Deepseek` 是单会话语义：同一时间最多只有一个活跃流，启动新流会先取消旧流；
+     * [cancelStream] 取消当前流，级联中止底层 HTTP 请求。
      * 调用方的 `collect` / [collectResponse] 可能抛出 [kotlinx.coroutines.CancellationException]。
      */
-    override fun cancelStream() = core.cancelStream()
+    public override fun cancelStream(): Unit = core.cancelStream()
 
     /**
      * 截断消息历史，仅保留下标 `[0, index]` 的消息（含两端）。
@@ -268,7 +277,7 @@ public open class Deepseek(
      *
      * @param index 保留的最后一个消息下标
      */
-    open fun truncateAt(index: Int) {
+    public open fun truncateAt(index: Int) {
         if (index >= 0 && index < _messages.lastIndex) {
             while (_messages.size > index + 1) {
                 _messages.removeAt(_messages.lastIndex)
@@ -277,21 +286,33 @@ public open class Deepseek(
     }
 
     /** 返回当前消息历史的消息数（含 system prompt） */
-    open fun getMessageCount(): Int = _messages.size
+    public open fun getMessageCount(): Int = _messages.size
 
     /**
      * 按内容在消息历史中查找第一条 user 消息的下标，未找到时返回 -1。
      *
      * @param content 要匹配的 user 消息文本
      */
-    open fun findUserMessageIndex(content: String): Int {
+    public open fun findUserMessageIndex(content: String): Int {
         return _messages.indexOfFirst {
             it.role == Role.User && it.content == content
         }
     }
 
     /** 当前使用的模型；未显式指定时固定为库内硬编码的 [Model.Flash] */
-    override val resolvedModel: Model get() = core.resolvedModel
+    public override val resolvedModel: Model get() = core.resolvedModel
+
+    /**
+     * FIM 补全使用的模型，默认 [Model.Pro]。
+     *
+     * **Beta**：见 [fimStream]。
+     */
+    @ExperimentalDeepseekApi
+    public var modelForFim: Model
+        get() = core.modelForFim
+        set(value) {
+            core.modelForFim = value
+        }
 
     private val _messages by lazy {
         mutableListOf<Message>().apply {
@@ -300,14 +321,14 @@ public open class Deepseek(
     }
 
     /** 当前对话历史（只读），首条为 system prompt（若设置了 [prompt]） */
-    open val messages: List<Message> get() = _messages
+    public open val messages: List<Message> get() = _messages
 
     /**
      * 手动向对话历史追加一条消息，追加后参与后续 [chatStream] / [continueStream] 请求。
      *
      * @param message 要追加的消息
      */
-    open fun addMessage(message: Message) {
+    public open fun addMessage(message: Message) {
         _messages.add(message)
     }
 
@@ -341,8 +362,10 @@ public open class Deepseek(
      * @param hook 可选的实时回调，与 Flow 事件一致，先于 Flow 触发
      * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
      */
-    override fun chatStream(userContent: String, hook: SseHook?): Flow<ChatChunk> =
-        core.streamFlow { streamLoop(core, _messages, userContent, hook) }
+    public override fun chatStream(userContent: String, hook: SseHook?): Flow<ChatChunk> =
+        core.streamFlow { session ->
+            streamLoop(core, _messages, userContent, hook, session)
+        }
 
     /**
      * 继续流式对话，与 [chatStream] 相同但不追加 user 消息。
@@ -353,8 +376,46 @@ public open class Deepseek(
      * @param hook 可选的实时回调，与 Flow 事件一致，先于 Flow 触发
      * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
      */
-    open fun continueStream(hook: SseHook? = null): Flow<ChatChunk> =
-        core.streamFlow { streamLoop(core, _messages, null, hook) }
+    public open fun continueStream(hook: SseHook? = null): Flow<ChatChunk> =
+        core.streamFlow { session ->
+            streamLoop(core, _messages, null, hook, session)
+        }
+
+    /**
+     * 发起流式 FIM（Fill In the Middle）补全请求。
+     *
+     * **Beta**：请求发送到 `/beta/completions` 端点，标注 [ExperimentalDeepseekApi]，
+     * 使用时需 `@OptIn(ExperimentalDeepseekApi::class)`；契约可能在后续版本调整。
+     *
+     * 请求固定发送到 `https://api.deepseek.com/beta/completions`；模型使用
+     * [modelForFim]，其余参数复用 [config] 中的 `maxTokens`、`temperature`、`topP`、
+     * `stop`、`includeUsage` 与 `topLogprobs`。
+     *
+     * ```kotlin
+     * ds.fimStream(
+     *     prompt = "def add(a, b):",
+     *     suffix = "    return a + b",
+     * ).collect { chunk ->
+     *     when (chunk) {
+     *         is FimChunk.TextDelta -> print(chunk.text)
+     *         is FimChunk.Done -> println("完成: ${chunk.usage.totalTokens} tokens")
+     *     }
+     * }
+     * ```
+     *
+     * @param prompt 补全提示（前缀）
+     * @param suffix 被补全内容的后缀，可为 `null`
+     * @param echo 是否在输出中回显 prompt，可为 `null`
+     * @param hook 可选的实时回调，与 Flow 事件一致
+     * @return 流式响应的 [Flow]，发射 [FimChunk] 事件
+     */
+    @ExperimentalDeepseekApi
+    public fun fimStream(
+        prompt: String,
+        suffix: String? = null,
+        echo: Boolean? = null,
+        hook: SseHook? = null,
+    ): Flow<FimChunk> = core.fimFlow(prompt, suffix, echo, hook)
 
     internal suspend fun handleToolCalls(
         pendingToolCalls: List<ChatChunk.ToolCallRequest>,
@@ -372,7 +433,7 @@ public open class Deepseek(
      *
      * @see Model
      */
-    override suspend fun availableModels(): List<Model> = core.availableModels()
+    public override suspend fun availableModels(): List<Model> = core.availableModels()
 
     /**
      * 获取当前 API Key 的账户余额信息。
@@ -381,7 +442,7 @@ public open class Deepseek(
      *
      * @see UserBalance
      */
-    override suspend fun balance(): UserBalance = core.balance()
+    public override suspend fun balance(): UserBalance = core.balance()
 }
 
 /**
@@ -405,14 +466,14 @@ public open class Deepseek(
  * @see onContent
  * @see collectResponse
  */
-sealed class ChatChunk {
+public sealed class ChatChunk : Chunk() {
     /**
      * 内容增量（流式传输的基本单位）。
      *
      * @property content 模型生成的纯文本增量，可能为空字符串
      * @property reasoningContent 思考（推理）内容增量，非空时表示模型正在思考（Beta）
      */
-    data class ContentDelta(
+    public data class ContentDelta(
         val content: String,
         val reasoningContent: String? = null,
     ) : ChatChunk()
@@ -422,7 +483,7 @@ sealed class ChatChunk {
      *
      * @property call 统一的工具调用领域模型
      */
-    data class ToolCallRequest(
+    public data class ToolCallRequest(
         val call: ToolCall,
     ) : ChatChunk()
 
@@ -434,7 +495,7 @@ sealed class ChatChunk {
      * @property content 工具返回的 JSON 内容或错误信息
      * @property isError 是否执行失败
      */
-    data class ToolResultData(
+    public data class ToolResultData(
         val toolCallId: String,
         val functionName: String,
         val content: String,
@@ -450,20 +511,26 @@ sealed class ChatChunk {
      * @property completionTokens 补全消耗的 token 数
      * @property totalTokens 总计消耗的 token 数
      * @property finishReason 结束原因（如 `stop`、`length`、`tool_calls`、`max_tool_iterations`）
+     * @property promptCacheHitTokens 命中上下文缓存的 prompt token 数
+     * @property promptCacheMissTokens 未命中上下文缓存的 prompt token 数
+     * @property reasoningTokens 推理模型思维链消耗的 token 数
      */
-    data class Done(
+    public data class Done(
         val promptTokens: Long,
         val completionTokens: Long,
         val totalTokens: Long,
         val finishReason: String? = null,
+        val promptCacheHitTokens: Long? = null,
+        val promptCacheMissTokens: Long? = null,
+        val reasoningTokens: Long? = null,
     ) : ChatChunk()
 }
 
 /**
  * SSE 流钩子，提供不依赖 [Flow] 的实时回调。
  *
- * 每个外层 Flow 可见的 [ChatChunk] 在进入 [Flow] 的 emit 前先回调 [onChunk]
- * （与 Flow 事件完全一致，工具循环中只收到最终累计 [ChatChunk.Done]）。
+ * 每个外层 Flow 可见的 [Chunk]（[ChatChunk] 或 [FimChunk]）在进入 [Flow] 的
+ * emit 前先回调 [onChunk]（与 Flow 事件完全一致）。
  * 适合需要实时反馈的场景（如逐字打印到终端）。
  *
  * ```kotlin
@@ -478,11 +545,11 @@ sealed class ChatChunk {
  * 大多数场景推荐使用 [onContent]、[onThinking] 等扩展函数替代 `SseHook`，
  * 它们提供更声明式的写法且不牺牲实时性。
  */
-fun interface SseHook {
+public fun interface SseHook {
     /**
      * 处理到达的流式事件。
      *
-     * @param chunk 流式增量事件
+     * @param chunk 公共流式事件，可为 [ChatChunk] 或 [FimChunk]
      */
-    suspend fun onChunk(chunk: ChatChunk)
+    public suspend fun onChunk(chunk: Chunk)
 }

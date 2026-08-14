@@ -1,0 +1,1346 @@
+public abstract class io/github/hatoyuze/deepseek/protocol/api/ChatChunk : io/github/hatoyuze/deepseek/protocol/api/Chunk {
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatChunk$ContentDelta : io/github/hatoyuze/deepseek/protocol/api/ChatChunk {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ContentDelta;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ContentDelta;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ContentDelta;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getReasoningContent ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatChunk$Done : io/github/hatoyuze/deepseek/protocol/api/ChatChunk {
+	public fun <init> (JJJLjava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (JJJLjava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()J
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Ljava/lang/Long;
+	public final fun copy (JJJLjava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$Done;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$Done;JJJLjava/lang/String;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$Done;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCompletionTokens ()J
+	public final fun getFinishReason ()Ljava/lang/String;
+	public final fun getPromptCacheHitTokens ()Ljava/lang/Long;
+	public final fun getPromptCacheMissTokens ()Ljava/lang/Long;
+	public final fun getPromptTokens ()J
+	public final fun getReasoningTokens ()Ljava/lang/Long;
+	public final fun getTotalTokens ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolCallRequest : io/github/hatoyuze/deepseek/protocol/api/ChatChunk {
+	public fun <init> (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;)V
+	public final fun component1 ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;
+	public final fun copy (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolCallRequest;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolCallRequest;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolCallRequest;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCall ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolResultData : io/github/hatoyuze/deepseek/protocol/api/ChatChunk {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolResultData;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolResultData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/ChatChunk$ToolResultData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getFunctionName ()Ljava/lang/String;
+	public final fun getToolCallId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isError ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatChunkExtensionsKt {
+	public static final fun collectResponse (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun onContent (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun onThinking (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun onToolCall (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
+	public static final fun onToolResult (Lkotlinx/coroutines/flow/Flow;Lkotlin/jvm/functions/Function2;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/ChatClient {
+	public abstract fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun cancelStream ()V
+	public abstract fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatClient;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getApiKey ()Ljava/lang/String;
+	public abstract fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;
+	public abstract fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
+	public abstract fun getResolvedModel ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public abstract fun getToolHost ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;
+	public abstract fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
+	public abstract fun setToolHost (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatClient$DefaultImpls {
+	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatClient;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatConfig {
+	public fun <init> ()V
+	public final fun getEnableWebSearch ()Z
+	public final fun getIncludeUsage ()Z
+	public final fun getLogprobs ()Ljava/lang/Boolean;
+	public final fun getMaxTokens ()Ljava/lang/Integer;
+	public final fun getMaxToolIterations ()I
+	public final fun getResponseFormat ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat;
+	public final fun getStop ()Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken;
+	public final fun getTemperature ()Ljava/lang/Double;
+	public final fun getThinkingMode ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode;
+	public final fun getToolChoice ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice;
+	public final fun getTopLogprobs ()Ljava/lang/Integer;
+	public final fun getTopP ()Ljava/lang/Double;
+	public final fun setEnableWebSearch (Z)V
+	public final fun setIncludeUsage (Z)V
+	public final fun setLogprobs (Ljava/lang/Boolean;)V
+	public final fun setMaxTokens (Ljava/lang/Integer;)V
+	public final fun setMaxToolIterations (I)V
+	public final fun setResponseFormat (Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat;)V
+	public final fun setStop (Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken;)V
+	public final fun setTemperature (Ljava/lang/Double;)V
+	public final fun setThinkingMode (Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode;)V
+	public final fun setToolChoice (Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice;)V
+	public final fun setTopLogprobs (Ljava/lang/Integer;)V
+	public final fun setTopP (Ljava/lang/Double;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ChatResponse {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/ChatResponse;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatResponse;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/ChatResponse;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getFinishReason ()Ljava/lang/String;
+	public final fun getThinkingContent ()Ljava/lang/String;
+	public final fun getToolCalls ()Ljava/util/List;
+	public final fun getUsage ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class io/github/hatoyuze/deepseek/protocol/api/Chunk {
+}
+
+public class io/github/hatoyuze/deepseek/protocol/api/Deepseek : io/github/hatoyuze/deepseek/protocol/api/ChatClient {
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun addMessage (Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;)V
+	public fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun cancelStream ()V
+	public fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public fun continueStream (Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun continueStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public fun findUserMessageIndex (Ljava/lang/String;)I
+	public fun getApiKey ()Ljava/lang/String;
+	public fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;
+	public fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
+	public fun getMessageCount ()I
+	public fun getMessages ()Ljava/util/List;
+	public final fun getModelForFim ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public fun getResolvedModel ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun getSharingPool ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;
+	public fun getToolHost ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;
+	public fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
+	public final fun setModelForFim (Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;)V
+	public fun setToolHost (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+	public fun truncateAt (I)V
+}
+
+public abstract class io/github/hatoyuze/deepseek/protocol/api/DeepseekApi {
+	public static final field STANDARD Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi$STANDARD;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekApi$RESPONSES : io/github/hatoyuze/deepseek/protocol/api/DeepseekApi {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi$RESPONSES;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekApi$STANDARD : io/github/hatoyuze/deepseek/protocol/api/DeepseekApi {
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekBuilder {
+	public fun <init> ()V
+	public final fun config (Lkotlin/jvm/functions/Function1;)V
+	public final fun getApi ()Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;
+	public final fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
+	public final fun getPrompt ()Ljava/lang/String;
+	public final fun getSharingPool ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;
+	public final fun model (Lkotlin/jvm/functions/Function1;)V
+	public final fun pool (Lkotlin/jvm/functions/Function1;)V
+	public final fun setApi (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;)V
+	public final fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
+	public final fun setPrompt (Ljava/lang/String;)V
+	public final fun setSharingPool (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;)V
+	public final fun tools (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekBuilderKt {
+	public static final fun deepseek (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;
+	public static final fun deepseek (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;
+	public static final fun statelessDeepseek (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;
+	public static final fun statelessDeepseek (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;
+}
+
+public abstract interface annotation class io/github/hatoyuze/deepseek/protocol/api/ExperimentalDeepseekApi : java/lang/annotation/Annotation {
+}
+
+public abstract class io/github/hatoyuze/deepseek/protocol/api/FimChunk : io/github/hatoyuze/deepseek/protocol/api/Chunk {
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/FimChunk$Done : io/github/hatoyuze/deepseek/protocol/api/FimChunk {
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/FimChunk$Done;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/FimChunk$Done;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/FimChunk$Done;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFinishReason ()Ljava/lang/String;
+	public final fun getUsage ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/FimChunk$TextDelta : io/github/hatoyuze/deepseek/protocol/api/FimChunk {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/FimChunk$TextDelta;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/FimChunk$TextDelta;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/FimChunk$TextDelta;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/FimChunkKt {
+	public static final fun collectFimResponse (Lkotlinx/coroutines/flow/Flow;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/FimResponse {
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/FimResponse;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/FimResponse;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/FimResponse;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFinishReason ()Ljava/lang/String;
+	public final fun getText ()Ljava/lang/String;
+	public final fun getUsage ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/ModelSelector {
+	public fun <init> ()V
+	public final fun custom (Ljava/lang/String;)V
+	public final fun flash ()V
+	public final fun pro ()V
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/SseHook {
+	public abstract fun onChunk (Lio/github/hatoyuze/deepseek/protocol/api/Chunk;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek : io/github/hatoyuze/deepseek/protocol/api/ChatClient {
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun cancelStream ()V
+	public fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public fun getApiKey ()Ljava/lang/String;
+	public fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;
+	public fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
+	public final fun getModelForFim ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public fun getResolvedModel ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun getSharingPool ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;
+	public fun getToolHost ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;
+	public fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
+	public final fun setModelForFim (Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;)V
+	public fun setToolHost (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo$Companion;
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo;Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCurrency ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
+	public final fun getGrantedBalance ()Ljava/lang/String;
+	public final fun getToppedUpBalance ()Ljava/lang/String;
+	public final fun getTotalBalance ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Currency : java/lang/Enum {
+	public static final field CNY Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency$Companion;
+	public static final field USD Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Currency$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Message {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Message$Companion;
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/lang/Boolean;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getPrefix ()Ljava/lang/Boolean;
+	public final fun getReasoningContent ()Ljava/lang/String;
+	public final fun getRole ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public final fun getToolCallId ()Ljava/lang/String;
+	public final fun getToolCalls ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/Message$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/Message$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Message$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Model {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Model$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getObj ()Ljava/lang/String;
+	public final fun getOwner ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/Model$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/Model$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Model$Companion {
+	public final fun flash (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun getFlash ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun getPro ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun ofModel (Ljava/lang/String;Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun pro (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort : java/lang/Enum {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort$Companion;
+	public static final field HIGH Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;
+	public static final field MAX Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat : java/lang/Enum {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat$Companion;
+	public static final field JSON_OBJECT Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat;
+	public static final field TEXT Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ResponseFormat$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Role : java/lang/Enum {
+	public static final field Assistance Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Role$Companion;
+	public static final field System Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public static final field Tool Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public static final field User Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Role$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/entity/StopToken {
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/StopToken$DefaultImpls {
+	public static fun toJsonElement (Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken;)Lkotlinx/serialization/json/JsonElement;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Multiple : io/github/hatoyuze/deepseek/protocol/api/entity/StopToken {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Multiple;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Multiple;Ljava/util/List;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Multiple;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getWords ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Single : io/github/hatoyuze/deepseek/protocol/api/entity/StopToken {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Single;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Single;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/StopToken$Single;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getWord ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$Companion;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$Companion {
+	public final fun getHigh ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$WithEffort;
+	public final fun getMax ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$WithEffort;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$Disabled : io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$Disabled;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$Enabled : io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$Enabled;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$WithEffort : io/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode {
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;)V
+	public final fun component1 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;
+	public final fun copy (Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$WithEffort;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$WithEffort;Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ThinkingMode$WithEffort;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEffort ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ReasoningEffort;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice {
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Auto : io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Auto;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$DefaultImpls {
+	public static fun toJsonElement (Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice;)Lkotlinx/serialization/json/JsonElement;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Named : io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Named;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Named;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Named;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$None : io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$None;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Required : io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Required;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toJsonElement ()Lkotlinx/serialization/json/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Usage {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage$Companion;
+	public fun <init> (JJJLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (JJJLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()J
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun copy (JJJLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;JJJLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCompletionTokens ()J
+	public final fun getPromptCacheHitTokens ()Ljava/lang/Long;
+	public final fun getPromptCacheMissTokens ()Ljava/lang/Long;
+	public final fun getPromptTokens ()J
+	public final fun getReasoningTokens ()Ljava/lang/Long;
+	public final fun getTotalTokens ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/Usage$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/UserBalance {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance$Companion;
+	public fun <init> (ZLjava/util/List;)V
+	public final fun component1 ()Z
+	public final fun copy (ZLjava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance;ZLjava/util/List;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBalanceInfo ()Lio/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo;
+	public fun hashCode ()I
+	public final fun isAvailable ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/UserBalance$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/UserBalance;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/UserBalance$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekFeature {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/net/DeepseekFeature$Companion;
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekFeatureConfig;)V
+	public final fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekFeatureConfig;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekFeature$Companion : io/ktor/client/plugins/HttpClientPlugin {
+	public fun getKey ()Lio/ktor/util/AttributeKey;
+	public fun install (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekFeature;Lio/ktor/client/HttpClient;)V
+	public synthetic fun install (Ljava/lang/Object;Lio/ktor/client/HttpClient;)V
+	public fun prepare (Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/net/DeepseekFeature;
+	public synthetic fun prepare (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekFeatureConfig {
+	public fun <init> ()V
+	public final fun getApiKey ()Ljava/lang/String;
+	public final fun setApiKey (Ljava/lang/String;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig {
+	public fun <init> ()V
+	public fun <init> (JLjava/lang/Long;IZ)V
+	public synthetic fun <init> (JLjava/lang/Long;IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()I
+	public final fun component4 ()Z
+	public final fun copy (JLjava/lang/Long;IZ)Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;JLjava/lang/Long;IZILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConnectTimeoutMillis ()J
+	public final fun getMaxRetries ()I
+	public final fun getRetryOnTimeout ()Z
+	public final fun getSocketTimeoutMillis ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public final fun setConnectTimeoutMillis (J)V
+	public final fun setMaxRetries (I)V
+	public final fun setRetryOnTimeout (Z)V
+	public final fun setSocketTimeoutMillis (Ljava/lang/Long;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory$Companion;
+	public abstract fun create (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;)Lio/ktor/client/HttpClient;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory$Companion {
+	public final fun getDefault ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool$Companion;
+	public fun <init> ()V
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory;)V
+	public synthetic fun <init> (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun close ()V
+	public final fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;
+	public final fun getFactory ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory;
+	public final fun setConfig (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientConfig;)V
+	public final fun setFactory (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientFactory;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool$Companion {
+	public final fun getGlobal ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPoolKt {
+	public static final fun config (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;Lkotlin/jvm/functions/Function1;)V
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/net/HttpHook {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/net/HttpHook$Companion;
+	public abstract fun onRequest (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;)V
+	public abstract fun onResponse (Ljava/lang/String;Ljava/lang/String;ILjava/util/Map;Ljava/lang/String;)V
+	public fun onSseEvent (Ljava/lang/String;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/HttpHook$Companion {
+	public final fun getNONE ()Lio/github/hatoyuze/deepseek/protocol/net/HttpHook;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/HttpHook$DefaultImpls {
+	public static fun onSseEvent (Lio/github/hatoyuze/deepseek/protocol/net/HttpHook;Ljava/lang/String;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/net/HttpHookRegistry {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/net/HttpHookRegistry;
+	public final fun add (Lio/github/hatoyuze/deepseek/protocol/net/HttpHook;)V
+	public final fun forEach (Lkotlin/jvm/functions/Function1;)V
+	public final fun isEmpty ()Z
+	public final fun remove (Lio/github/hatoyuze/deepseek/protocol/net/HttpHook;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/Logger {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun error (Lkotlin/jvm/functions/Function0;)V
+	public final fun info (Lkotlin/jvm/functions/Function0;)V
+}
+
+public abstract class io/github/hatoyuze/deepseek/toolcall/ToolHandler : io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor {
+	public fun <init> ()V
+	public abstract fun execute (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getDefinition ()Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/WebSearchToolKt {
+	public static final field DEEPSEEK_WEB_SEARCH_TOOL Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/AnyOfParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun option (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/ArrayParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun items (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/DefinitionsBuilder {
+	public fun <init> ()V
+	public final fun define (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/DoubleParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun getConst ()Ljava/lang/Double;
+	public final fun getDefault ()Ljava/lang/Double;
+	public final fun getExclusiveMaximum ()Ljava/lang/Double;
+	public final fun getExclusiveMinimum ()Ljava/lang/Double;
+	public final fun getMaximum ()Ljava/lang/Double;
+	public final fun getMinimum ()Ljava/lang/Double;
+	public final fun getMultipleOf ()Ljava/lang/Double;
+	public final fun setConst (Ljava/lang/Double;)V
+	public final fun setDefault (Ljava/lang/Double;)V
+	public final fun setExclusiveMaximum (Ljava/lang/Double;)V
+	public final fun setExclusiveMinimum (Ljava/lang/Double;)V
+	public final fun setMaximum (Ljava/lang/Double;)V
+	public final fun setMinimum (Ljava/lang/Double;)V
+	public final fun setMultipleOf (Ljava/lang/Double;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/EnumParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun getValues ()Ljava/util/List;
+	public final fun setValues (Ljava/util/List;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/FunctionBuilder {
+	public final fun build ()Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public final fun definitions (Lkotlin/jvm/functions/Function1;)V
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getStrict ()Z
+	public final fun parameters (Lkotlin/jvm/functions/Function1;)V
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setStrict (Z)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/FunctionBuilderKt {
+	public static final fun createFunction (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public static final fun parametersOf (Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/IntegerParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun getConst ()Ljava/lang/Integer;
+	public final fun getDefault ()Ljava/lang/Integer;
+	public final fun getExclusiveMaximum ()Ljava/lang/Integer;
+	public final fun getExclusiveMinimum ()Ljava/lang/Integer;
+	public final fun getMaximum ()Ljava/lang/Integer;
+	public final fun getMinimum ()Ljava/lang/Integer;
+	public final fun getMultipleOf ()Ljava/lang/Integer;
+	public final fun setConst (Ljava/lang/Integer;)V
+	public final fun setDefault (Ljava/lang/Integer;)V
+	public final fun setExclusiveMaximum (Ljava/lang/Integer;)V
+	public final fun setExclusiveMinimum (Ljava/lang/Integer;)V
+	public final fun setMaximum (Ljava/lang/Integer;)V
+	public final fun setMinimum (Ljava/lang/Integer;)V
+	public final fun setMultipleOf (Ljava/lang/Integer;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/ObjectParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun properties (Lkotlin/jvm/functions/Function1;)V
+}
+
+public class io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getRequired ()Z
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setRequired (Z)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/ParametersBuilder {
+	public fun <init> ()V
+	public final fun anyOf (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public final fun array (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public final fun boolean (Ljava/lang/String;Ljava/lang/String;Z)V
+	public static synthetic fun boolean$default (Lio/github/hatoyuze/deepseek/toolcall/dsl/ParametersBuilder;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)V
+	public final fun enum (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public final fun integer (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun integer$default (Lio/github/hatoyuze/deepseek/toolcall/dsl/ParametersBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun number (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun number$default (Lio/github/hatoyuze/deepseek/toolcall/dsl/ParametersBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun obj (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public final fun ref (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z)V
+	public static synthetic fun ref$default (Lio/github/hatoyuze/deepseek/toolcall/dsl/ParametersBuilder;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)V
+	public final fun string (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun string$default (Lio/github/hatoyuze/deepseek/toolcall/dsl/ParametersBuilder;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/StringParamBuilder : io/github/hatoyuze/deepseek/toolcall/dsl/ParamBuilderBase {
+	public fun <init> ()V
+	public final fun getFormat ()Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public final fun getPattern ()Ljava/lang/String;
+	public final fun setFormat (Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;)V
+	public final fun setPattern (Ljava/lang/String;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/ToolBuilder {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getHandlerBlock ()Lkotlin/jvm/functions/Function3;
+	public final fun getParamsBlock ()Lkotlin/jvm/functions/Function1;
+	public final fun getSchema ()Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;
+	public final fun getStrict ()Z
+	public final fun parameters (Lkotlin/jvm/functions/Function1;)V
+	public final fun setDescription (Ljava/lang/String;)V
+	public final fun setHandlerBlock (Lkotlin/jvm/functions/Function3;)V
+	public final fun setParamsBlock (Lkotlin/jvm/functions/Function1;)V
+	public final fun setStrict (Z)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/ToolHostBuilder {
+	public fun <init> ()V
+	public final fun build ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;
+	public final fun logging ()V
+	public final fun register (Lio/github/hatoyuze/deepseek/toolcall/ToolHandler;)V
+	public final fun retry (IJJ)V
+	public static synthetic fun retry$default (Lio/github/hatoyuze/deepseek/toolcall/dsl/ToolHostBuilder;IJJILjava/lang/Object;)V
+	public final fun timeout (J)V
+	public final fun tool (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/dsl/ToolHostBuilderKt {
+	public static final fun toolHost (Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/CompositeToolExecutor : io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor {
+	public fun <init> (Ljava/util/Map;)V
+	public fun execute (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/Formats : java/lang/Enum {
+	public static final field email Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public static final field hostname Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public static final field ipv4 Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public static final field ipv6 Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public static final field uuid Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ParameterBag {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterBag$Companion;
+	public final fun contains (Ljava/lang/String;)Z
+	public final fun get (Ljava/lang/String;)Ljava/lang/Object;
+	public final fun getBag (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterBag;
+	public final fun getBoolean (Ljava/lang/String;)Z
+	public final fun getDouble (Ljava/lang/String;)D
+	public final fun getInt (Ljava/lang/String;)I
+	public final fun getList (Ljava/lang/String;)Ljava/util/List;
+	public final fun getString (Ljava/lang/String;)Ljava/lang/String;
+	public final fun getStringOrNull (Ljava/lang/String;)Ljava/lang/String;
+	public final fun keys ()Ljava/util/Set;
+	public final fun set (Ljava/lang/String;Ljava/lang/Object;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ParameterBag$Companion {
+	public final fun empty ()Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterBag;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ParameterBagSerializer : kotlinx/serialization/KSerializer {
+	public fun <init> (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;)V
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterBag;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterBag;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ParameterDef {
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;
+	public final fun copy (Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;)Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getSchema ()Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$AnyOfDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$AnyOfDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$AnyOfDef;Ljava/util/List;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$AnyOfDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOptions ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ArrayDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> (Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;)V
+	public final fun component1 ()Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;
+	public final fun copy (Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ArrayDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ArrayDef;Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ArrayDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getItems ()Lio/github/hatoyuze/deepseek/toolcall/executor/ParameterDef;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$BooleanDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> ()V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$DoubleDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$NumberDef {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;)V
+	public synthetic fun <init> (Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;Ljava/lang/Double;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$EnumDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$EnumDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$EnumDef;Ljava/util/List;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$EnumDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$IntegerDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$NumberDef {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public abstract class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$NumberDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getConst ()Ljava/lang/Number;
+	public final fun getDefault ()Ljava/lang/Number;
+	public final fun getExclusiveMaximum ()Ljava/lang/Number;
+	public final fun getExclusiveMinimum ()Ljava/lang/Number;
+	public final fun getMaximum ()Ljava/lang/Number;
+	public final fun getMinimum ()Ljava/lang/Number;
+	public final fun getMultipleOf ()Ljava/lang/Number;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> (Ljava/util/Map;Ljava/util/List;Z)V
+	public synthetic fun <init> (Ljava/util/Map;Ljava/util/List;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/Map;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/util/Map;Ljava/util/List;Z)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;Ljava/util/Map;Ljava/util/List;ZILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAdditionalProperties ()Z
+	public final fun getProperties ()Ljava/util/Map;
+	public final fun getRequired ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$RefDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$RefDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$RefDef;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$RefDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRef ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$StringDef : io/github/hatoyuze/deepseek/toolcall/executor/PropertyDef {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public final fun copy (Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$StringDef;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$StringDef;Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$StringDef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFormat ()Lio/github/hatoyuze/deepseek/toolcall/executor/Formats;
+	public final fun getPattern ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/SimpleTypedToolExecutor : io/github/hatoyuze/deepseek/toolcall/executor/TypedToolExecutor {
+	public fun <init> (Lkotlin/reflect/KClass;Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer;Lkotlin/jvm/functions/Function3;)V
+	public fun execute (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun executeTyped (Ljava/lang/Object;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getParameterType ()Lkotlin/reflect/KClass;
+	public fun getSerializer ()Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCall {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArguments ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getType ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCall$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCallContext : io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallContext$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;Ljava/lang/Object;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;Ljava/lang/Object;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getTypedParams ()Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCallContext$Companion {
+	public final fun from (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Ljava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallContext;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCallSerializer : kotlinx/serialization/KSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallSerializer;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCallType : java/lang/Enum {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType$Companion;
+	public static final field FUNCTION Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;
+	public static final field WEB_SEARCH_CALL Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCallType;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolCallType$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public class io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext$Companion;
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/Set;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getPermissions ()Ljava/util/Set;
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getUserId ()Ljava/lang/String;
+	public static final synthetic fun write$Self (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor {
+	public abstract fun execute (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolResult {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getToolCallId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isError ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/toolcall/executor/ToolResult$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/executor/ToolResult$Companion {
+	public final fun error (Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+	public final fun success (Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;
+}
+
+public abstract class io/github/hatoyuze/deepseek/toolcall/executor/TypedToolExecutor : io/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor {
+	public fun <init> ()V
+	public fun execute (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun executeTyped (Ljava/lang/Object;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getParameterType ()Lkotlin/reflect/KClass;
+	public fun getSerializer ()Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer;
+	protected fun resolveParams-0E7RQCE (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/PipelineContext {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/pipeline/PipelineContext$Companion;
+	public field phaseInterceptors Ljava/util/List;
+	public fun <init> (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lio/github/hatoyuze/deepseek/toolcall/registry/ToolRegistry;)V
+	public final fun getCall ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;
+	public final fun getCurrentPhase ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public final fun getError ()Ljava/lang/Throwable;
+	public final fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
+	public final fun getExecutor ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor;
+	public final fun getInterceptorIndex ()I
+	public final fun getPhaseIndex ()I
+	public final fun getPhaseInterceptors ()Ljava/util/List;
+	public final fun getRegistry ()Lio/github/hatoyuze/deepseek/toolcall/registry/ToolRegistry;
+	public final fun getResult ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;
+	public final fun getTypedParams ()Ljava/lang/Object;
+	public final fun proceed (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun setCurrentPhase (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;)V
+	public final fun setError (Ljava/lang/Throwable;)V
+	public final fun setInterceptorIndex (I)V
+	public final fun setPhaseIndex (I)V
+	public final fun setPhaseInterceptors (Ljava/util/List;)V
+	public final fun setResult (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolResult;)V
+	public final fun setTypedParams (Ljava/lang/Object;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/PipelineContext$Companion {
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/PipelineException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getCause ()Ljava/lang/Throwable;
+	public fun getMessage ()Ljava/lang/String;
+	public final fun isRetryable ()Z
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost {
+	public fun <init> (Lio/github/hatoyuze/deepseek/toolcall/registry/ToolRegistry;)V
+	public final fun execute (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolCall;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getDefinitions ()Ljava/util/List;
+	public final fun getPipeline ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPipeline;
+	public final fun intercept (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;Lkotlin/jvm/functions/Function2;)V
+	public final fun isEmpty ()Z
+	public final fun register (Lio/github/hatoyuze/deepseek/toolcall/ToolHandler;)V
+	public final fun register (Ljava/lang/String;Ljava/lang/String;ZLio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;Lkotlin/jvm/functions/Function3;)V
+	public static synthetic fun register$default (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;Ljava/lang/String;Ljava/lang/String;ZLio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;Lkotlin/jvm/functions/Function3;ILjava/lang/Object;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase : java/lang/Enum {
+	public static final field AUTHORIZE Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static final field ERROR Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static final field EXECUTE Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static final field POST_PROCESS Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static final field TRANSFORM Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static final field VALIDATE Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPipeline {
+	public fun <init> ()V
+	public final fun execute (Lio/github/hatoyuze/deepseek/toolcall/pipeline/PipelineContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun intercept (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallPhase;Lkotlin/jvm/functions/Function2;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/plugins/LoggingPlugin {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/pipeline/plugins/LoggingPlugin;
+	public final fun install (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/plugins/RetryPlugin {
+	public fun <init> ()V
+	public fun <init> (IJJ)V
+	public synthetic fun <init> (IJJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun install (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/plugins/SerializationPlugin {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/pipeline/plugins/SerializationPlugin;
+	public final fun install (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/pipeline/plugins/TimeoutPlugin {
+	public fun <init> (J)V
+	public final fun install (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLkotlinx/serialization/json/JsonElement;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLkotlinx/serialization/json/JsonElement;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Lkotlinx/serialization/json/JsonElement;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLkotlinx/serialization/json/JsonElement;Ljava/util/Map;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;Ljava/lang/String;Ljava/lang/String;ZLkotlinx/serialization/json/JsonElement;Ljava/util/Map;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDefs ()Ljava/util/Map;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getParameters ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getStrict ()Z
+	public fun hashCode ()I
+	public final fun toFunctionElement ()Lkotlinx/serialization/json/JsonObject;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition$Companion {
+	public final fun from (Ljava/lang/String;Ljava/lang/String;ZLio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;Ljava/util/Map;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public static synthetic fun from$default (Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition$Companion;Ljava/lang/String;Ljava/lang/String;ZLio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef$ObjectDef;Ljava/util/Map;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/registry/ToolRegistry {
+	public fun <init> ()V
+	public final fun getDefinition (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;
+	public final fun getDefinitions ()Ljava/util/List;
+	public final fun getExecutor (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor;
+	public final fun isEmpty ()Z
+	public final fun register (Lio/github/hatoyuze/deepseek/toolcall/registry/ToolDefinition;Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutor;)V
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/serializer/ArgumentDeserializationException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getCause ()Ljava/lang/Throwable;
+	public fun getMessage ()Ljava/lang/String;
+	public final fun getRawJson ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer {
+	public static final field Companion Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer$Companion;
+	public abstract fun deserialize (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun serialize (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer$Companion {
+	public final fun from (Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/json/Json;)Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer;
+	public static synthetic fun from$default (Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer$Companion;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/json/Json;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer;
+}
+
+public class io/github/hatoyuze/deepseek/toolcall/serializer/KotlinxArgumentSerializer : io/github/hatoyuze/deepseek/toolcall/serializer/ArgumentSerializer {
+	public fun <init> (Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/DeserializationStrategy;Lkotlinx/serialization/json/Json;)V
+	public fun deserialize (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun serialize (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/toolcall/serializer/PropertyDefSerializer : kotlinx/serialization/KSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/toolcall/serializer/PropertyDefSerializer;
+	public fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public final fun serializeToElement (Lio/github/hatoyuze/deepseek/toolcall/executor/PropertyDef;)Lkotlinx/serialization/json/JsonElement;
+}
+

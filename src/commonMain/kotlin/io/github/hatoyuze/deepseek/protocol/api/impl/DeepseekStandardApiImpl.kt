@@ -8,6 +8,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.FinishReason
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
+import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.registry.ToolDefinition
 import io.ktor.client.statement.*
@@ -20,10 +21,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlin.collections.iterator
 
-internal class DeepseekStandardApiImpl(apiKey: String, beta: Boolean = false) :
-    DeepseekApiBase(
+internal class DeepseekStandardApiImpl(
+    apiKey: String,
+    pool: DeepseekHttpClientPool,
+) : DeepseekApiBase(
         apiKey = apiKey,
-        baseUrl = "https://api.deepseek.com" + if (beta) "/beta" else "",
+        baseUrl = "https://api.deepseek.com",
+        pool = pool,
     ) {
 
     @OptIn(ExperimentalDeepseekApi::class)
@@ -154,6 +158,9 @@ internal class DeepseekStandardApiImpl(apiKey: String, beta: Boolean = false) :
                         completionTokens = it.completionTokens,
                         totalTokens = it.totalTokens,
                         finishReason = finishReason?.name?.lowercase(),
+                        promptCacheHitTokens = it.promptCacheHitTokens,
+                        promptCacheMissTokens = it.promptCacheMissTokens,
+                        reasoningTokens = it.reasoningTokens,
                     )
                     emit(done)
                 }
@@ -169,7 +176,11 @@ internal class DeepseekStandardApiImpl(apiKey: String, beta: Boolean = false) :
  */
 @OptIn(ExperimentalDeepseekApi::class)
 internal fun List<Message>.withoutReasoningContent(): List<Message> =
-    map { it.copy(reasoningContent = null) }
+    if (none { it.reasoningContent != null }) {
+        this
+    } else {
+        map { it.copy(reasoningContent = null) }
+    }
 
 internal suspend fun checkHttpStatus(response: HttpResponse) {
     when (response.status) {

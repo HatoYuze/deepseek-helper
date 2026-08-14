@@ -71,3 +71,14 @@ desktop.ini
 /run/
 /debug-sandbox
 /temp/
+
+# Local agent tooling — never commit (git-workflow: agent files stay out of history)
+.agents/
+.claude/
+skills-lock.json
+
+# Android SDK local config (machine-specific paths)
+local.properties
+
+# Local debug artifacts
+cio-classes/
