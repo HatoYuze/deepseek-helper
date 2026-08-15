@@ -145,7 +145,7 @@ val response = deepseek("<Your Deepseek Key>") { // 使用 DSL 语法来构建�
 
 #### FIM 补全 API（Beta）
 
-`fimStream` 固定请求 `https://api.deepseek.com/beta/completions`，模型默认使用
+`fimStream` 请求 `{baseUrl}/beta/completions`（默认官方地址 `https://api.deepseek.com`），模型默认使用
 `modelForFim`（默认 `deepseek-v4-pro`），并复用 `config` 的 `maxTokens`、
 `temperature`、`topP`、`stop`、`includeUsage` 与 `topLogprobs`。
 
@@ -183,6 +183,33 @@ val ds = deepseek("<Your Deepseek Key>") {
 
 > **IMPORTANT** 当池为 `DeepseekHttpClientPool.Global` 时，`pool { }` 会先复制出
 > 实例级池再应用修改，不会影响全局共享配置。
+
+#### 自定义 API 服务供应商（baseUrl）
+
+默认所有请求（chat / models / balance / FIM）都发送到官方地址
+`https://api.deepseek.com`。通过 `baseUrl` 可以把客户端指向任意 OpenAI/DeepSeek
+兼容的 API 服务供应商（代理、网关或自建端点），`Deepseek` 与 `StatelessDeepseek`
+均支持：
+
+```kotlin
+// 构造器方式
+val ds = Deepseek("<Your Key>", baseUrl = "https://my-provider.example.com/v1")
+
+// DSL 方式
+val stateless = statelessDeepseek("<Your Key>") {
+    baseUrl = "https://my-provider.example.com/v1"
+    model { custom("my-model") } // 第三方供应商通常需要自定义模型 ID
+}
+```
+
+- `baseUrl` 必须是绝对 `http(s)` 地址，非法值在创建客户端时直接抛 `IllegalArgumentException`
+- 支持带路径前缀（如上例的 `/v1`），请求拼接为 `{baseUrl}/chat/completions`
+- 尾部 `/` 会被自动去除，`https://host/` 与 `https://host` 等价；不支持 userinfo
+  （`https://user@host`）、query（`?…`）与 fragment（`#…`）
+- `http://` 明文传输 API Key，仅建议用于本地代理或测试环境
+- 不同 `baseUrl` 的客户端使用独立的连接池客户端；连接池按 baseUrl 缓存且无自动驱逐，
+  请控制 baseUrl 基数（每个供应商/网关少量配置），并可在适当时调用池的 `close()` 释放资源
+- `/models`、`/user/balance` 与 FIM（`/beta/completions`）是否可用取决于供应商，不支持的端点会返回服务端错误
 
 #### Tool Call 管道设计
 

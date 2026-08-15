@@ -106,6 +106,7 @@ public fun statelessDeepseek(apiKey: String, sharedConfig: ChatConfig, block: De
  * - **model** — 模型选择（[ModelSelector]）
  * - **prompt** — 系统提示词
  * - **config** — [ChatConfig] 对话参数
+ * - **baseUrl** — API 服务地址（base URL），可指向任意 OpenAI/DeepSeek 兼容的供应商
  * - **tools** — 工具注册与管道插件（[ToolHostBuilder]）
  */
 public class DeepseekBuilder {
@@ -114,6 +115,16 @@ public class DeepseekBuilder {
 
     /** 使用的 API wire format，默认 [DeepseekApi.STANDARD] */
     public var api: DeepseekApi = DeepseekApi.STANDARD
+
+    /**
+     * API 服务地址（base URL）。
+     *
+     * 默认官方地址 `https://api.deepseek.com`；可指向任意 OpenAI/DeepSeek 兼容的
+     * API 服务供应商，支持带路径前缀（如 `https://host/v1`）。chat / models /
+     * balance / FIM 请求都会发送到该地址。尾部 `/` 会被自动去除；不支持 userinfo、
+     * query 与 fragment；非法地址在创建客户端时抛 [IllegalArgumentException]。
+     */
+    public var baseUrl: String = "https://api.deepseek.com"
 
     /** 客户端共享的 HttpClient 池，默认使用 [DeepseekHttpClientPool.Global] */
     public var sharingPool: DeepseekHttpClientPool = DeepseekHttpClientPool.Global
@@ -219,6 +230,7 @@ public class DeepseekBuilder {
             prompt = prompt,
             config = config,
             api = api,
+            baseUrl = baseUrl,
             sharingPool = sharingPool,
         ).applyBuilderState()
     }
@@ -230,6 +242,7 @@ public class DeepseekBuilder {
             prompt = prompt,
             config = config,
             api = api,
+            baseUrl = baseUrl,
             sharingPool = sharingPool,
         ).applyBuilderState()
     }

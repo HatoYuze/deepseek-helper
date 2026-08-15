@@ -24,9 +24,10 @@ import kotlin.collections.iterator
 internal class DeepseekStandardApiImpl(
     apiKey: String,
     pool: DeepseekHttpClientPool,
+    baseUrl: String = DEFAULT_BASE_URL,
 ) : DeepseekApiBase(
         apiKey = apiKey,
-        baseUrl = "https://api.deepseek.com",
+        baseUrl = baseUrl,
         pool = pool,
     ) {
 
@@ -187,7 +188,8 @@ internal suspend fun checkHttpStatus(response: HttpResponse) {
         HttpStatusCode.Unauthorized -> throw IllegalStateException("API key 错误，认证失败\n请检查您的 API key 是否正确，如没有 API key，请先 创建 API key")
         HttpStatusCode.BadRequest -> throw IllegalArgumentException("""
             Error 400 bad request
-            Header: ${response.request.headers}
+            Header:
+            ${response.redactedHeaders()}
             Tip: ${response.bodyAsText()}
         """.trimIndent())
         HttpStatusCode.PaymentRequired -> throw IllegalStateException("账号余额不足\n请确认账户余额，并前往 充值 页面进行充值")
@@ -198,6 +200,15 @@ internal suspend fun checkHttpStatus(response: HttpResponse) {
     }
 
     if (response.status != HttpStatusCode.OK) {
-        throw IllegalStateException("An error happened because of wrong response status: ${response.status}\n With headers: ${response.request.headers}")
+        throw IllegalStateException("An error happened because of wrong response status: ${response.status}\n With headers:\n${response.redactedHeaders()}")
     }
 }
+
+/**
+ * 请求头的可安全展示文本：去除 `Authorization`，避免 API Key 泄漏进异常消息
+ * （第三方供应商接入后非 2xx 响应更常见，异常消息可能进入应用日志/崩溃上报）。
+ */
+internal fun HttpResponse.redactedHeaders(): String =
+    request.headers.entries()
+        .filterNot { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
+        .joinToString("\n") { (name, values) -> "$name: ${values.joinToString(",")}" }

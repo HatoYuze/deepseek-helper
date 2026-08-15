@@ -146,8 +146,8 @@ public abstract class io/github/hatoyuze/deepseek/protocol/api/Chunk {
 }
 
 public class io/github/hatoyuze/deepseek/protocol/api/Deepseek : io/github/hatoyuze/deepseek/protocol/api/ChatClient {
-	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun addMessage (Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;)V
 	public fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -159,6 +159,7 @@ public class io/github/hatoyuze/deepseek/protocol/api/Deepseek : io/github/hatoy
 	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public fun findUserMessageIndex (Ljava/lang/String;)I
 	public fun getApiKey ()Ljava/lang/String;
+	public final fun getBaseUrl ()Ljava/lang/String;
 	public fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;
 	public fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
 	public fun getMessageCount ()I
@@ -191,12 +192,14 @@ public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekBuilder {
 	public fun <init> ()V
 	public final fun config (Lkotlin/jvm/functions/Function1;)V
 	public final fun getApi ()Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;
+	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
 	public final fun getPrompt ()Ljava/lang/String;
 	public final fun getSharingPool ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;
 	public final fun model (Lkotlin/jvm/functions/Function1;)V
 	public final fun pool (Lkotlin/jvm/functions/Function1;)V
 	public final fun setApi (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;)V
+	public final fun setBaseUrl (Ljava/lang/String;)V
 	public final fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
 	public final fun setPrompt (Ljava/lang/String;)V
 	public final fun setSharingPool (Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;)V
@@ -273,8 +276,8 @@ public abstract interface class io/github/hatoyuze/deepseek/protocol/api/SseHook
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek : io/github/hatoyuze/deepseek/protocol/api/ChatClient {
-	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lio/github/hatoyuze/deepseek/protocol/api/DeepseekApi;Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun cancelStream ()V
@@ -282,6 +285,7 @@ public final class io/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek : 
 	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public fun getApiKey ()Ljava/lang/String;
+	public final fun getBaseUrl ()Ljava/lang/String;
 	public fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;
 	public fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
 	public final fun getModelForFim ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;

@@ -2,6 +2,17 @@
 
 本仓库遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）。发布记录见下，最新版本在前。
 
+## [Unreleased]
+
+### 新增功能
+
+- `Deepseek` / `StatelessDeepseek` 创建时支持 `baseUrl` 参数（构造器与 DSL 两种方式），
+  可指向任意 OpenAI/DeepSeek 兼容的 API 服务供应商；chat / models / balance / FIM 请求
+  统一走自定义地址，默认仍为官方 `https://api.deepseek.com`
+  - 支持带路径前缀（如 `https://host/v1`）与尾部 `/` 归一化；拒绝 userinfo / query / fragment
+  - 非法地址（空白 / 非 http(s) / 无主机）在创建客户端时 fail-fast 抛 `IllegalArgumentException`
+  - `checkHttpStatus` 异常消息脱敏 `Authorization` 头，避免 API Key 泄漏进日志/崩溃上报
+
 ## [0.2.0] - 2026-08-14
 
 自 v0.1.1 以来的变更（`git log v0.1.1..v0.2.0`）。

@@ -30,9 +30,10 @@ import kotlinx.serialization.json.put
 internal class DeepseekResponsesApiImpl(
     apiKey: String,
     pool: DeepseekHttpClientPool,
+    baseUrl: String = DEFAULT_BASE_URL,
 ) : DeepseekApiBase(
         apiKey = apiKey,
-        baseUrl = "https://api.deepseek.com",
+        baseUrl = baseUrl,
         pool = pool,
     ) {
 

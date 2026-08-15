@@ -9,6 +9,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekApiBackend
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
 import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
+import io.github.hatoyuze.deepseek.protocol.net.normalizeBaseUrl
 import io.github.hatoyuze.deepseek.protocol.api.entity.UserBalance
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
@@ -187,6 +188,9 @@ public interface ChatClient {
  * @param sharingPool 客户端共享的 HttpClient 池，默认使用 [DeepseekHttpClientPool.Global]
  * @property config 对话补全控制参数，修改后对后续所有请求生效
  * @param api 使用的 API wire format（[DeepseekApi.STANDARD] 或 [DeepseekApi.RESPONSES]）
+ * @param baseUrl API 服务地址（base URL），默认官方地址 `https://api.deepseek.com`；
+ *   可指向任意 OpenAI/DeepSeek 兼容的 API 服务供应商，支持带路径前缀（如 `https://host/v1`）；
+ *   不支持 userinfo / query / fragment
  *
  * @see [deepseek] 推荐通过 DSL 方式构造
  * @see collectResponse 对流式结果的结构化收集扩展
@@ -199,7 +203,11 @@ public open class Deepseek(
     public override val config: ChatConfig = ChatConfig(),
     private val api: DeepseekApi = DeepseekApi.STANDARD,
     public val sharingPool: DeepseekHttpClientPool = DeepseekHttpClientPool.Global,
+    baseUrl: String = "https://api.deepseek.com",
 ) : ChatClient {
+
+    /** API 服务地址（归一化：无尾部 `/`，不含 userinfo / query / fragment） */
+    public val baseUrl: String = normalizeBaseUrl(baseUrl)
 
     /** 共享的客户端核心（网络后端、取消机制与流式对话循环） */
     internal var core: DeepseekCore = DeepseekCore(
@@ -208,6 +216,7 @@ public open class Deepseek(
         prompt = prompt,
         config = config,
         api = api,
+        baseUrl = baseUrl,
         sharingPool = sharingPool,
         singleSession = true,
     )
@@ -387,7 +396,8 @@ public open class Deepseek(
      * **Beta**：请求发送到 `/beta/completions` 端点，标注 [ExperimentalDeepseekApi]，
      * 使用时需 `@OptIn(ExperimentalDeepseekApi::class)`；契约可能在后续版本调整。
      *
-     * 请求固定发送到 `https://api.deepseek.com/beta/completions`；模型使用
+     * 请求发送到 `{baseUrl}/beta/completions`（默认官方地址
+     * `https://api.deepseek.com`）；模型使用
      * [modelForFim]，其余参数复用 [config] 中的 `maxTokens`、`temperature`、`topP`、
      * `stop`、`includeUsage` 与 `topLogprobs`。
      *

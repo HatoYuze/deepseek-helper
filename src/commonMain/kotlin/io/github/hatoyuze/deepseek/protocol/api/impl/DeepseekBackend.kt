@@ -24,6 +24,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 
+/**
+ * 官方 DeepSeek API 服务地址。
+ *
+ * 客户端未显式指定 baseUrl 时，chat / models / balance / FIM 请求都发送到该地址；
+ * 各后端实现（STANDARD / RESPONSES / FIM）以它作为 baseUrl 参数的默认值。
+ */
+internal const val DEFAULT_BASE_URL = "https://api.deepseek.com"
+
 internal interface DeepseekApiBackend {
     suspend fun models(): List<Model>
 

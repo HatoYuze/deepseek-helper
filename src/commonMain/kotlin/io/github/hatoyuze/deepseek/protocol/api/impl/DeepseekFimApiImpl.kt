@@ -142,7 +142,8 @@ internal suspend fun FimCompletionChunk.emitFimChunks(
 }
 
 /**
- * FIM 补全 API 的网络后端，固定请求 `https://api.deepseek.com/beta/completions`。
+ * FIM 补全 API 的网络后端，请求发送到 `{baseUrl}/beta/completions`，
+ * 默认使用官方地址 [DEFAULT_BASE_URL]。
  */
 @OptIn(ExperimentalDeepseekApi::class)
 internal interface DeepseekFimApi {
@@ -172,8 +173,9 @@ internal interface DeepseekFimApi {
 internal class DeepseekFimApiImpl(
     apiKey: String,
     pool: DeepseekHttpClientPool,
+    baseUrl: String = DEFAULT_BASE_URL,
 ) : DeepseekFimApi {
-    private val net = Network("https://api.deepseek.com", apiKey, pool)
+    private val net = Network(baseUrl, apiKey, pool)
 
     override fun fim(
         prompt: String,

@@ -2,6 +2,7 @@ package io.github.hatoyuze.deepseek.protocol.api
 
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
+import io.github.hatoyuze.deepseek.protocol.api.impl.DEFAULT_BASE_URL
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekApiBackend
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekFimApi
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekFimApiImpl
@@ -37,6 +38,7 @@ internal class DeepseekCore(
     val prompt: String?,
     val config: ChatConfig,
     val api: DeepseekApi,
+    val baseUrl: String = DEFAULT_BASE_URL,
     val sharingPool: DeepseekHttpClientPool = DeepseekHttpClientPool.Global,
     private val singleSession: Boolean = false,
     backend: DeepseekApiBackend? = null,
@@ -45,12 +47,12 @@ internal class DeepseekCore(
 
     /** 按 [api] 选择对应的 wire format 后端实现 */
     val backend: DeepseekApiBackend = backend ?: when (api) {
-        DeepseekApi.STANDARD -> DeepseekStandardApiImpl(apiKey, sharingPool)
-        DeepseekApi.RESPONSES -> DeepseekResponsesApiImpl(apiKey, sharingPool)
+        DeepseekApi.STANDARD -> DeepseekStandardApiImpl(apiKey, sharingPool, baseUrl)
+        DeepseekApi.RESPONSES -> DeepseekResponsesApiImpl(apiKey, sharingPool, baseUrl)
     }
 
     /** FIM 补全 API 的网络后端 */
-    val fimApi: DeepseekFimApi = fimApi ?: DeepseekFimApiImpl(apiKey, sharingPool)
+    val fimApi: DeepseekFimApi = fimApi ?: DeepseekFimApiImpl(apiKey, sharingPool, baseUrl)
 
     /** 工具调用宿主，设置后 [streamLoop] 自动执行模型请求的工具 */
     var toolHost: ToolCallHost? = null

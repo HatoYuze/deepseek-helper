@@ -156,7 +156,8 @@ This maps `/responses` events to the currently supported `ChatChunk` types:
 
 #### FIM Completion API (Beta)
 
-`fimStream` always requests `https://api.deepseek.com/beta/completions`. It uses
+`fimStream` requests `{baseUrl}/beta/completions` (the official
+`https://api.deepseek.com` by default). It uses
 `modelForFim` (default `deepseek-v4-pro`) and reuses `maxTokens`, `temperature`,
 `topP`, `stop`, `includeUsage`, and `topLogprobs` from `config`.
 
@@ -195,6 +196,36 @@ val ds = deepseek("<Your Deepseek Key>") {
 > **IMPORTANT** When the pool is `DeepseekHttpClientPool.Global`, `pool { }` first
 > copies it into an instance-level pool before applying changes, so the global
 > shared configuration is never modified.
+
+#### Custom API Provider (baseUrl)
+
+By default every request (chat / models / balance / FIM) is sent to the official
+`https://api.deepseek.com`. The `baseUrl` parameter points the client at any
+OpenAI/DeepSeek-compatible API provider (proxy, gateway, or self-hosted endpoint);
+both `Deepseek` and `StatelessDeepseek` support it:
+
+```kotlin
+// Constructor
+val ds = Deepseek("<Your Key>", baseUrl = "https://my-provider.example.com/v1")
+
+// DSL
+val stateless = statelessDeepseek("<Your Key>") {
+    baseUrl = "https://my-provider.example.com/v1"
+    model { custom("my-model") } // Third-party providers usually need a custom model id
+}
+```
+
+- `baseUrl` must be an absolute `http(s)` URL; invalid values throw
+  `IllegalArgumentException` when the client is created
+- Path prefixes are supported (e.g. `/v1` above); requests go to `{baseUrl}/chat/completions`
+- A trailing `/` is stripped automatically, so `https://host/` equals `https://host`;
+  userinfo (`https://user@host`), query (`?…`), and fragment (`#…`) are rejected
+- `http://` transmits the API key in cleartext — use only for local proxies/testing
+- Clients with different `baseUrl` values use separate pooled HTTP clients; the pool caches
+  per baseUrl without eviction, so keep the baseUrl cardinality bounded (a few per provider/
+  gateway) and call the pool's `close()` when appropriate to release resources
+- `/models`, `/user/balance`, and FIM (`/beta/completions`) availability depends on the
+  provider; unsupported endpoints return server-side errors
 
 #### Tool Call Pipeline Design
 
