@@ -10,7 +10,7 @@ plugins {
 
 // Central Portal 命名空间为 io.github.<GitHub 用户名>，与包名 io.github.hatoyuze.deepseek.* 无关
 group = "io.github.hatoyuze"
-version = "0.2.0"
+version = "0.3.0"
 
 // Android target 仅在检测到 Android SDK 时启用：
 // 本机无 SDK 时构建行为与之前完全一致；CI runner（自带 SDK）会自动编译并发布 Android AAR。

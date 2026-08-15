@@ -16,7 +16,7 @@ It supports interruption, regeneration, custom Tool Call behavior, FIM completio
 ```kotlin
 // build.gradle.kts (commonMain)
 dependencies {
-    implementation("io.github.hatoyuze:deepseek-helper:0.2.0")
+    implementation("io.github.hatoyuze:deepseek-helper:0.3.0")
 }
 ```
 

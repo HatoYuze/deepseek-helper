@@ -2,7 +2,7 @@
 
 本仓库遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）。发布记录见下，最新版本在前。
 
-## [Unreleased]
+## [0.3.0] - 2026-08-15
 
 ### 新增功能
 
