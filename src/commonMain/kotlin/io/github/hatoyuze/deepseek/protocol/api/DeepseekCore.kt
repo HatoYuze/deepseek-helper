@@ -199,7 +199,8 @@ internal class DeepseekCore(
  * 流式对话循环：追加 user 消息、执行补全请求与工具调用循环、累计 usage，
  * 结束时发射一次累计 [ChatChunk.Done] 并把 assistant 回复写入历史。
  *
- * 失败或取消时把 [history] 回滚到本次调用前的状态，避免残留消息污染下轮请求。
+ * 失败或取消时回滚本轮自己追加的消息（按引用精确删除，见 `ownMessages`），
+ * 不会删除其它来源写入同一张历史的、并不属于本轮的消息。
  * [hook] 只收到外层 Flow 可见的事件（含最终累计 Done）。
  */
 internal suspend fun FlowCollector<ChatChunk>.streamLoop(
@@ -209,8 +210,14 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
     hook: SseHook?,
     session: StreamSession,
 ) {
-    val historyStart = history.size
-    if (userContent != null) history.add(Message(Role.User, content = userContent))
+    // 本轮自己追加的消息（按引用记录）：回滚时只删除这些实例，
+    // 避免误删并发写入或历史被整体替换后新表上的、并不属于本轮的消息
+    val ownMessages = mutableListOf<Message>()
+    if (userContent != null) {
+        val userMessage = Message(Role.User, content = userContent)
+        history.add(userMessage)
+        ownMessages += userMessage
+    }
     val contentBuilder = StringBuilder()
     var iterations = 0
 
@@ -232,6 +239,7 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
             var hasToolCallInResponse = false
 
             core.backend.completions(
+                // 必须是拷贝：序列化期间 handleToolCalls 会继续往 history 追加，别名会导致并发修改
                 messages = history.toList(),
                 model = core.resolvedModel,
                 config = core.config,
@@ -272,7 +280,9 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
 
             // ★ 检查点 3: 工具调用执行前
             if (session.cancelled) return
+            val toolWriteStart = history.size
             val toolResults = core.handleToolCalls(pendingToolCalls, history)
+            ownMessages += history.subList(toolWriteStart, history.size)
             for (tr in toolResults) {
                 val data = ChatChunk.ToolResultData(tr.toolCallId, tr.functionName, tr.content, tr.isError)
                 hook?.onChunk(data)
@@ -299,13 +309,19 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
         emit(done)
 
         if (contentBuilder.isNotEmpty()) {
-            history.add(Message(Role.Assistance, content = contentBuilder.toString()))
+            val assistantMessage = Message(Role.Assistance, content = contentBuilder.toString())
+            history.add(assistantMessage)
+            ownMessages += assistantMessage
         }
         committed = true
     } finally {
         if (!committed) {
-            while (history.size > historyStart) {
-                history.removeAt(history.lastIndex)
+            // 只回滚本轮的写入：按引用查找并删除，绝不按位置截断
+            //（按位置截断会连带删除同一张表上由其它来源追加的消息）
+            for (i in ownMessages.indices.reversed()) {
+                val message = ownMessages[i]
+                val index = history.indexOfFirst { it === message }
+                if (index >= 0) history.removeAt(index)
             }
         }
     }

@@ -107,6 +107,41 @@ class DeepseekHistoryConcurrencyTest {
     }
 
     @Test
+    fun `a cancelled round only rolls back its own messages`() = runTest {
+        val firstStarted = CompletableDeferred<Unit>()
+        val secondStarted = CompletableDeferred<Unit>()
+        var calls = 0
+        val backend = GatedBackend {
+            calls++
+            val started = if (calls == 1) firstStarted else secondStarted
+            flow {
+                started.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        val ds = statefulDeepseek(backend, prompt = "sys")
+
+        val first = launch { ds.chatStream("A").collect { } }
+        withTimeout(5_000) { firstStarted.await() }
+
+        // 单会话语义：启动新流会取消旧流；旧流的回滚只该删掉它自己写入的消息
+        val second = launch { ds.chatStream("B").collect { } }
+        withTimeout(5_000) { secondStarted.await() }
+        withTimeout(5_000) { first.join() }
+
+        assertEquals(
+            listOf(system, Message(Role.User, "B")),
+            ds.messages,
+            "第一轮的回滚不得删除第二轮写入的 user 消息",
+        )
+
+        ds.cancelStream()
+        withTimeout(5_000) { second.join() }
+
+        assertEquals(listOf(system), ds.messages, "第二轮取消后应只回滚自己的 user 消息")
+    }
+
+    @Test
     fun `replaced history is the context of the next stream`() = runTest {
         val seen = mutableListOf<List<Message>>()
         val backend = GatedBackend { messages ->
