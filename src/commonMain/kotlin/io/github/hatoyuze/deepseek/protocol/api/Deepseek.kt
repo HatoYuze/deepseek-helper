@@ -15,6 +15,7 @@ import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
 import io.github.hatoyuze.deepseek.toolcall.pipeline.ToolCallHost
 import kotlinx.coroutines.flow.Flow
+import kotlin.concurrent.Volatile
 
 /**
  * 对话补全的控制参数。
@@ -182,6 +183,23 @@ public interface ChatClient {
  * }
  * ```
  *
+ * ## 线程模型与并发契约
+ *
+ * - **单会话语义**：同一时刻最多存在一个活跃流（[chatStream]、[continueStream]、[fimStream] 均参与）；
+ *   启动新流、[replaceHistory]、[clearHistory]、[truncateAt] 都会先取消当前活跃流。
+ * - **历史访问非线程安全**：[addMessage]、[truncateAt]、[replaceHistory]、[clearHistory] 以及
+ *   [messages] 的读取，都不得与活跃流的收集并发调用；需要并发访问时由调用方自行串行化
+ *   （Mutex / 单线程调度器 / 队列）。库内不加锁：这些公共历史 API 均为非 suspend 函数，
+ *   而 commonMain 没有可用的阻塞锁；且互斥锁无法跨越收集窗口，解决不了流在自己 `finally`
+ *   中回滚历史的竞态。
+ * - **所有内部历史写入都发生在收集协程内**：[chatStream] / [continueStream] 在收集期间追加 user
+ *   消息、工具调用循环写入 assistant/tool 消息、结束时提交 assistant 回复；失败或取消时回滚到
+ *   本轮开始的状态，被取消的流不会把本轮消息留在历史里。
+ * - **历史替换是整体换表而非就地修改**：被取消的流只持有替换前的旧表引用，其回滚只作用于旧表，
+ *   不会覆盖或撤销替换后的新历史。
+ * - [messages] 返回不可变快照；实例本身不实现 `List` / `MutableList`（历史是会话状态而不是容器，
+ *   需要多态时请在包装层定义自己的窄接口）。
+ *
  * @property apiKey DeepSeek API 密钥，从 [DeepSeek 平台](https://platform.deepseek.com) 获取
  * @param model 指定使用的模型；为 `null` 时使用库内硬编码的 [Model.Flash]，不会发起网络请求
  * @property prompt 系统提示词，作为对话历史中的初始 system 消息；为 `null` 时历史以第一条用户消息开始
@@ -227,6 +245,8 @@ public open class Deepseek(
      */
     internal constructor(apiKey: String, core: DeepseekCore) : this(apiKey) {
         this.core = core
+        // 历史按注入后的 core 重建（system prompt 来自注入的核心）
+        _messages = initialHistory()
     }
 
     /** 按 [api] 选择对应的 wire format 后端实现 */
@@ -323,22 +343,90 @@ public open class Deepseek(
             core.modelForFim = value
         }
 
-    private val _messages by lazy {
+    /**
+     * 当前历史表。
+     *
+     * 历史替换/清空采用**整体换表**而非就地修改：被取消的流只持有替换前的旧表引用，
+     * 它的 `finally` 回滚就不可能覆盖或撤销替换后的新历史。[Volatile] 保证换表这一次引用写
+     * 对其它线程可见；引用替换本身是单次原子写，内容级别的并发仍由调用方串行化
+     * （见类文档「线程模型与并发契约」）。
+     */
+    @Volatile
+    private var _messages: MutableList<Message> = initialHistory()
+
+    /** 初始历史：构造期 system prompt（若设置了 `prompt`）作为首条消息 */
+    private fun initialHistory(): MutableList<Message> =
         mutableListOf<Message>().apply {
             systemPromptMessage?.let { add(it) }
         }
-    }
 
-    /** 当前对话历史（只读），首条为 system prompt（若设置了 [prompt]） */
-    public open val messages: List<Message> get() = _messages
+    /**
+     * 当前对话历史（不可变快照），首条为 system prompt（若设置了 [prompt]）。
+     *
+     * 返回的是调用时的快照：之后实例的追加/替换都不会改变它，内部可变列表也不会暴露给调用方。
+     * 快照本身仍是一次对内部表的无锁拷贝，因此并发契约不变：同一线程（含 `collect` 回调内）读取
+     * 是安全的，但不得与活跃流的收集并发读取或写入；需要跨线程访问时请在应用层把历史操作与流
+     * 收集串行化（见类文档「线程模型与并发契约」）。
+     *
+     * 实例本身不实现 `List` / `MutableList` —— 历史是会话状态而不是容器，
+     * 写入请走 [addMessage]、[replaceHistory]、[clearHistory]。
+     */
+    public open val messages: List<Message> get() = _messages.toList()
 
     /**
      * 手动向对话历史追加一条消息，追加后参与后续 [chatStream] / [continueStream] 请求。
+     *
+     * 非线程安全：不得与活跃流的收集并发调用（见类文档「线程模型与并发契约」）。
      *
      * @param message 要追加的消息
      */
     public open fun addMessage(message: Message) {
         _messages.add(message)
+    }
+
+    /**
+     * 把对话历史整体替换为 [messages]（**精确替换**，不会自动附加构造期 system prompt）。
+     *
+     * 语义（已由测试固化）：
+     * - 非空列表：历史立即变为 [messages]，逐条完全一致；调用方之后修改传入列表不影响实例
+     *   （调用时防御性拷贝）。
+     * - 空列表：等价于 [clearHistory]，即重置为初始状态 —— 构造期 system prompt 若存在则作为
+     *   唯一消息，否则历史为空。
+     * - 返回后 [getMessageCount] 与 [messages] 立即与新历史一致。
+     * - 若存在活跃流：返回前先取消该流（同「启动新流会先取消旧流」的单会话语义）；被取消流的
+     *   回滚只作用于替换前的旧历史，**不会撤销本次替换**。在 `collect` 回调内调用会取消当前
+     *   收集协程（`CancellationException`），按常规取消处理即可。
+     *
+     * 需要「构造期 system prompt + 自有消息」时，请自行把 system 消息放进列表：
+     *
+     * ```kotlin
+     * // 构造期 prompt 对应的 system 消息可由初始历史取得
+     * val system = ds.messages.firstOrNull()?.takeIf { it.role == Role.System }
+     * ds.replaceHistory(listOfNotNull(system) + messagesFromDatabase)
+     * ```
+     *
+     * 非线程安全：不得与活跃流的收集并发调用（见类文档「线程模型与并发契约」）。
+     *
+     * @param messages 新的完整历史（不含构造期 system prompt）
+     */
+    public open fun replaceHistory(messages: List<Message>) {
+        installHistory(if (messages.isEmpty()) initialHistory() else messages)
+    }
+
+    /**
+     * 清空对话历史，只保留构造期 system prompt（构造 [Deepseek] 时传入的 `prompt`）。
+     *
+     * 未设置 `prompt` 时历史变为空列表；等价于 `replaceHistory(emptyList())`。
+     * 存在活跃流时先取消该流，其回滚不会撤销本次清空（见类文档「线程模型与并发契约」）。
+     */
+    public open fun clearHistory() {
+        replaceHistory(emptyList())
+    }
+
+    /** 安装一份新历史：先取消活跃流（单会话语义），再整体换表 */
+    private fun installHistory(messages: List<Message>) {
+        core.cancelStream()
+        _messages = messages.toMutableList()
     }
 
     /**

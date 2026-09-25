@@ -104,3 +104,12 @@ internal fun testCore(
     backend = backend,
     fimApi = fimApi,
 )
+
+/** 构造一个注入 Fake 后端的有状态客户端（单会话语义），供历史相关测试复用。 */
+internal fun statefulDeepseek(
+    backend: GatedBackend,
+    prompt: String? = null,
+): Deepseek = Deepseek(
+    apiKey = "test-key",
+    core = testCore(singleSession = true, backend = backend, prompt = prompt),
+)

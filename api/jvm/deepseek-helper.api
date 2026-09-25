@@ -153,6 +153,7 @@ public class io/github/hatoyuze/deepseek/protocol/api/Deepseek : io/github/hatoy
 	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun cancelStream ()V
 	public fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public fun clearHistory ()V
 	public fun continueStream (Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun continueStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
@@ -168,6 +169,7 @@ public class io/github/hatoyuze/deepseek/protocol/api/Deepseek : io/github/hatoy
 	public fun getResolvedModel ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
 	public final fun getSharingPool ()Lio/github/hatoyuze/deepseek/protocol/net/DeepseekHttpClientPool;
 	public fun getToolHost ()Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;
+	public fun replaceHistory (Ljava/util/List;)V
 	public fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
 	public final fun setModelForFim (Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;)V
 	public fun setToolHost (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
