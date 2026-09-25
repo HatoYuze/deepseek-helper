@@ -301,17 +301,31 @@ public open class Deepseek(
     /**
      * 截断消息历史，仅保留下标 `[0, index]` 的消息（含两端）。
      *
-     * 下标按内部历史计算，system prompt 位于 0（若设置了 [prompt]）；下标越界时不做任何操作。
-     * 常用于“重新生成”：先截断到目标 user 消息，再调用 [continueStream]。
+     * 下标按内部历史计算，system prompt 位于 0（若设置了 [prompt]）；`index == lastIndex` 合法，
+     * 此时历史内容不变。常用于“重新生成”：先截断到目标 user 消息，再调用 [continueStream]。
      *
-     * @param index 保留的最后一个消息下标
+     * 越界（`index < 0` 或 `index > lastIndex`）**fail-fast**：抛 [IndexOutOfBoundsException]，
+     * 不再像 0.3.0 及更早版本那样静默无操作（调用方以为改了上下文、实际历史原封不动）。
+     * 无 prompt 且无消息的空历史 `lastIndex == -1`，因此任何下标都会抛；要清空历史请用
+     * [clearHistory]，要整体替换请用 [replaceHistory]。存在活跃流时会先取消该流
+     * （同 [replaceHistory] 的单会话语义，被取消流的回滚不会撤销本次截断）。
+     *
+     * @param index 保留的最后一个消息下标，合法范围 `0..lastIndex`
+     * @throws IndexOutOfBoundsException 下标越界时
      */
+    @Deprecated(
+        message = "越界下标已改为抛 IndexOutOfBoundsException（旧版本会静默无操作）；" +
+            "整体替换请用 replaceHistory(...)，清空请用 clearHistory()",
+        replaceWith = ReplaceWith("replaceHistory(messages.take(index + 1))"),
+    )
     public open fun truncateAt(index: Int) {
-        if (index >= 0 && index < _messages.lastIndex) {
-            while (_messages.size > index + 1) {
-                _messages.removeAt(_messages.lastIndex)
-            }
+        if (index < 0 || index > _messages.lastIndex) {
+            throw IndexOutOfBoundsException(
+                "truncateAt(index=$index) 越界：当前历史 size=${_messages.size}，" +
+                    "合法范围 0..${_messages.lastIndex}；清空历史请用 clearHistory()",
+            )
         }
+        installHistory(_messages.take(index + 1))
     }
 
     /** 返回当前消息历史的消息数（含 system prompt） */

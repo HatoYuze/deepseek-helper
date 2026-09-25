@@ -185,7 +185,7 @@ class DeepSeekApiTest {
     }
 
     @Test
-    fun `continueStream regenerates after truncateAt`() = runBlocking {
+    fun `continueStream regenerates after replaceHistory`() = runBlocking {
         withTimeout(90.seconds) {
             val ds = deepseek(apiKey) {
                 prompt = "You are a helpful assistant."
@@ -199,7 +199,7 @@ class DeepSeekApiTest {
             val userIndex = ds.findUserMessageIndex("用一句话介绍你自己")
             assert(userIndex >= 0) { "应能找到 user 消息索引，实际: $userIndex" }
 
-            ds.truncateAt(userIndex)
+            ds.replaceHistory(ds.messages.take(userIndex + 1))
             assert(ds.getMessageCount() == 2) { "截断后应只剩 system + user" }
 
             val second = ds.continueStream()
