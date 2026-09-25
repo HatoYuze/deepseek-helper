@@ -186,19 +186,25 @@ public interface ChatClient {
  * ## 线程模型与并发契约
  *
  * - **单会话语义**：同一时刻最多存在一个活跃流（[chatStream]、[continueStream]、[fimStream] 均参与）；
- *   启动新流、[replaceHistory]、[clearHistory]、[truncateAt] 都会先取消当前活跃流。
- * - **历史访问非线程安全**：[addMessage]、[truncateAt]、[replaceHistory]、[clearHistory] 以及
- *   [messages] 的读取，都不得与活跃流的收集并发调用；需要并发访问时由调用方自行串行化
- *   （Mutex / 单线程调度器 / 队列）。库内不加锁：这些公共历史 API 均为非 suspend 函数，
- *   而 commonMain 没有可用的阻塞锁；且互斥锁无法跨越收集窗口，解决不了流在自己 `finally`
- *   中回滚历史的竞态。
+ *   启动新流、[replaceHistory]、[clearHistory]、[truncateAt] 都会先取消当前活跃流
+ *   （[addMessage] 只做追加，不取消任何流）。
+ * - **历史访问非线程安全**：[addMessage]、[truncateAt]、[replaceHistory]、[clearHistory] 以及历史
+ *   读取（[messages]、[getMessageCount]、[findUserMessageIndex]）都不得与活跃流的收集并发调用；
+ *   需要并发访问时由调用方自行串行化（Mutex / 单线程调度器 / 队列）。库内不加锁：这些公共历史
+ *   API 均为非 suspend 函数，而 commonMain 没有可用的阻塞锁；且互斥锁无法跨越收集窗口，
+ *   解决不了流在自己 `finally` 中回滚历史的竞态。
  * - **所有内部历史写入都发生在收集协程内**：[chatStream] / [continueStream] 在收集期间追加 user
- *   消息、工具调用循环写入 assistant/tool 消息、结束时提交 assistant 回复；失败或取消时回滚到
- *   本轮开始的状态，被取消的流不会把本轮消息留在历史里。
- * - **历史替换是整体换表而非就地修改**：被取消的流只持有替换前的旧表引用，其回滚只作用于旧表，
- *   不会覆盖或撤销替换后的新历史。
- * - [messages] 返回不可变快照；实例本身不实现 `List` / `MutableList`（历史是会话状态而不是容器，
- *   需要多态时请在包装层定义自己的窄接口）。
+ *   消息、工具调用循环写入 assistant/tool 消息、结束时提交 assistant 回复；失败或取消时按引用
+ *   回滚**本轮自己追加**的消息（不会删除其它来源写入的消息），被取消的流不会把本轮消息留在历史里。
+ *   Flow 是冷的：重复收集同一个 Flow 会再发起一轮请求、再追加一轮消息。
+ * - **历史替换是整体换表而非就地修改**：[replaceHistory]、[clearHistory]、[truncateAt] 走换表路径，
+ *   被取消的流只持有替换前的旧表引用，其回滚只作用于旧表，不会覆盖或撤销替换后的新历史。
+ *   换表是对历史表引用的单次原子写（[Volatile] 保证可见性），但**内容级并发不受保护**：
+ *   并发追加（活跃流的写入或 [addMessage]）期间的读取不保证得到任何曾经存在的历史。
+ * - 取消是协作式的：取消标志在每个 chunk 与每轮工具循环前检查，因此取消与 `Done` 的送达之间存在
+ *   窗口 —— 调用方在 `Done` 送达过程中取消收集协程时，本轮仍按取消回滚。
+ * - [messages] 返回不可变快照（每次读取都会拷贝，轮询请用 [getMessageCount]）；实例本身不实现
+ *   `List` / `MutableList`（历史是会话状态而不是容器，需要多态时请在包装层定义自己的窄接口）。
  *
  * @property apiKey DeepSeek API 密钥，从 [DeepSeek 平台](https://platform.deepseek.com) 获取
  * @param model 指定使用的模型；为 `null` 时使用库内硬编码的 [Model.Flash]，不会发起网络请求
@@ -302,13 +308,21 @@ public open class Deepseek(
      * 截断消息历史，仅保留下标 `[0, index]` 的消息（含两端）。
      *
      * 下标按内部历史计算，system prompt 位于 0（若设置了 [prompt]）；`index == lastIndex` 合法，
-     * 此时历史内容不变。常用于“重新生成”：先截断到目标 user 消息，再调用 [continueStream]。
+     * 此时历史内容不变。**任何** `truncateAt` 调用（含 `index == lastIndex` 的空操作）都会先取消
+     * 当前活跃流并重新安装历史表，与其他历史操作一致。
      *
      * 越界（`index < 0` 或 `index > lastIndex`）**fail-fast**：抛 [IndexOutOfBoundsException]，
      * 不再像 0.3.0 及更早版本那样静默无操作（调用方以为改了上下文、实际历史原封不动）。
      * 无 prompt 且无消息的空历史 `lastIndex == -1`，因此任何下标都会抛；要清空历史请用
-     * [clearHistory]，要整体替换请用 [replaceHistory]。存在活跃流时会先取消该流
-     * （同 [replaceHistory] 的单会话语义，被取消流的回滚不会撤销本次截断）。
+     * [clearHistory]，要整体替换请用 [replaceHistory]，被取消流的回滚不会撤销本次截断。
+     *
+     * 新的“重新生成”写法推荐使用 [replaceHistory]（IDE 也会按此提示自动替换）：
+     *
+     * ```kotlin
+     * val userIndex = ds.findUserMessageIndex("用一句话介绍你自己")
+     * ds.replaceHistory(ds.messages.take(userIndex + 1))
+     * ds.continueStream()
+     * ```
      *
      * @param index 保留的最后一个消息下标，合法范围 `0..lastIndex`
      * @throws IndexOutOfBoundsException 下标越界时
@@ -382,6 +396,9 @@ public open class Deepseek(
      * 是安全的，但不得与活跃流的收集并发读取或写入；需要跨线程访问时请在应用层把历史操作与流
      * 收集串行化（见类文档「线程模型与并发契约」）。
      *
+     * 每次读取都会拷贝一次（O(n)）：高频轮询请用 [getMessageCount]，需要多次使用同一份历史时
+     * 请自行缓存这份快照，不要在每个 chunk 的回调里重复读取。
+     *
      * 实例本身不实现 `List` / `MutableList` —— 历史是会话状态而不是容器，
      * 写入请走 [addMessage]、[replaceHistory]、[clearHistory]。
      */
@@ -410,6 +427,8 @@ public open class Deepseek(
      * - 若存在活跃流：返回前先取消该流（同「启动新流会先取消旧流」的单会话语义）；被取消流的
      *   回滚只作用于替换前的旧历史，**不会撤销本次替换**。在 `collect` 回调内调用会取消当前
      *   收集协程（`CancellationException`），按常规取消处理即可。
+     * - 只做浅拷贝：传入的 [Message] 对象本身（及其 `toolCalls` 列表）按引用持有，替换后请勿再
+     *   修改这些对象，否则会改变实例历史与后续请求体。
      *
      * 需要「构造期 system prompt + 自有消息」时，请自行把 system 消息放进列表：
      *

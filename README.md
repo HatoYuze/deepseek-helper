@@ -89,9 +89,48 @@ if (response.content.isNotEmpty()) {
 println("── ${response.usage.totalTokens} tokens")
 ```
 
-每一个 `Deepseek` 实例将会持有对话中的所有聊天记录，你可以使用 `ds.truncateAt(index)` 截断聊天记录到指定下标处(不可逆)
+每一个 `Deepseek` 实例将会持有对话中的所有聊天记录：
 
-> `Deepseek` 实例默认行为将会自动存储聊天记录，如果你不需要聊天记录，可以使用 `StatelessDeepseek` 的**无状态客户端**，其调用逻辑与 `Deepseek` 相似
+```kotlin
+// 读取完整历史（返回调用时的快照，首条为 system prompt）
+val messages: List<Message> = ds.messages // 每次读取都会拷贝一次，高频轮询请用 getMessageCount()
+ds.getMessageCount()
+ds.findUserMessageIndex("用一句话介绍你自己")
+
+// 把上下文整体设为任意消息序列（精确替换，不自动附加构造期 prompt）
+ds.replaceHistory(messagesFromDatabase)
+
+// 清空到只剩构造期 system prompt（无 prompt 时为空历史）
+ds.clearHistory()
+
+// “重新生成”：截断到目标 user 消息后继续补全
+val userIndex = ds.findUserMessageIndex("用一句话介绍你自己")
+ds.replaceHistory(ds.messages.take(userIndex + 1))
+ds.continueStream()
+```
+
+> `replaceHistory` 是**精确替换**：不会自动附加构造期 `prompt`，需要保留 system prompt 时请把 system
+> 消息一并放进列表（或先 `clearHistory()` 再逐条 `addMessage`）。传入空列表等价于 `clearHistory()`。
+> 替换历史会先取消当前活跃流，被取消流的回滚不会撤销替换结果。
+
+> `ds.truncateAt(index)` 已废弃：越界下标现在会抛 `IndexOutOfBoundsException`（旧版本静默无操作），
+> 迁移写法即上面的 `replaceHistory(ds.messages.take(index + 1))`，清空请用 `clearHistory()`。
+
+> 历史操作（`addMessage` / `truncateAt` / `replaceHistory` / `clearHistory`）与历史读取
+> （`messages` / `getMessageCount` / `findUserMessageIndex`）都不是线程安全的，不得与活跃流的收集
+> 并发调用，需要并发时请在应用层串行化（Mutex / 单线程调度器）。
+> 详见 `Deepseek` KDoc 的「线程模型与并发契约」。
+
+> `Deepseek` 实例默认行为将会自动存储聊天记录，如果你不需要聊天记录，可以使用 `StatelessDeepseek` 的**无状态客户端**，其调用逻辑与 `Deepseek` 相似。
+> 无状态客户端也可以直接把完整消息列表交给 `chatStream`，用于「从持久化记录重建上下文后发一轮请求」：
+>
+> ```kotlin
+> val ds = statelessDeepseek("sk-xxx") { prompt = null } // 需要完全按传入列表控制上下文时不设置 prompt
+> ds.chatStream(messagesFromDatabase).collect { chunk -> /* ... */ }
+> ```
+>
+> 该重载不追加 user 消息（`messages` 即完整对话）、调用时对传入列表取快照、不写入任何实例状态；
+> 构造期 `prompt` 仍会前置到每次请求，若不希望出现额外 system 消息请用 `prompt = null` 的实例。
 
 
 如果你想要中断流，可以使用 `cancelStream()`。它会取消流的收集协程并中止底层请求

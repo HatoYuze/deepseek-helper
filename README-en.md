@@ -97,9 +97,53 @@ if (response.content.isNotEmpty()) {
 println("── ${response.usage.totalTokens} tokens")
 ```
 
-Each `Deepseek` instance holds all chat history in the conversation. You can truncate the chat history to a specified index using `ds.truncateAt(index)` (irreversible).
+Each `Deepseek` instance holds all chat history in the conversation:
+
+```kotlin
+// Read the whole history (a snapshot taken at call time, starting with the system prompt)
+val messages: List<Message> = ds.messages // every read copies; poll getMessageCount() instead
+ds.getMessageCount()
+ds.findUserMessageIndex("introduce yourself in one sentence")
+
+// Set the context to any message sequence in one call (exact replacement, no prompt injection)
+ds.replaceHistory(messagesFromDatabase)
+
+// Clear down to the construction prompt only (empty history when no prompt is set)
+ds.clearHistory()
+
+// "Regenerate": trim to the target user message and continue
+val userIndex = ds.findUserMessageIndex("introduce yourself in one sentence")
+ds.replaceHistory(ds.messages.take(userIndex + 1))
+ds.continueStream()
+```
+
+> `replaceHistory` replaces **exactly**: the construction `prompt` is not prepended, so include the system
+> message in the list when you want to keep it (or `clearHistory()` first and `addMessage` one by one).
+> An empty list is equivalent to `clearHistory()`. Replacing the history cancels the active stream first,
+> and that stream's rollback can never undo the replacement.
+
+> `ds.truncateAt(index)` is deprecated: out-of-range indexes now throw `IndexOutOfBoundsException` where
+> older versions silently did nothing. Migrate to `replaceHistory(ds.messages.take(index + 1))` (or
+> `clearHistory()`), as shown above.
+
+> History operations (`addMessage` / `truncateAt` / `replaceHistory` / `clearHistory`) and history reads
+> (`messages` / `getMessageCount` / `findUserMessageIndex`) are not thread-safe: never call them
+> concurrently with an active stream's collection, and serialize them in the application layer
+> (Mutex / single-threaded dispatcher) when needed. See the "thread model and concurrency contract"
+> section in the `Deepseek` KDoc.
 
 > By default, `Deepseek` instances automatically store chat history. If you do not need history, you can use the **stateless client** `StatelessDeepseek`, which has similar invocation logic to `Deepseek`.
+> The stateless client can also take a complete message list directly, for "rebuild the context from
+> persisted records and send one request":
+>
+> ```kotlin
+> val ds = statelessDeepseek("sk-xxx") { prompt = null } // leave prompt unset to control the context exactly
+> ds.chatStream(messagesFromDatabase).collect { chunk -> /* ... */ }
+> ```
+>
+> This overload appends no user message (`messages` is the whole conversation), snapshots the list at call
+> time and keeps no instance state; the construction `prompt` is still prepended to every request, so use
+> an instance with `prompt = null` when you do not want an extra system message.
 
 If you want to interrupt a stream, use `cancelStream()`. It cancels the stream
 collection coroutine and aborts the underlying request (closes the connection and
