@@ -133,9 +133,10 @@ public class StatelessDeepseek(
      *
      * - **不追加 user 消息**：[messages] 就是完整对话（最后一条通常是本轮 user 消息）。
      *   「重新生成 / 继续生成」只需把截断后的完整列表传进来，无需另一个入口。
-     * - 调用时即对 [messages] 取快照，之后修改该列表不影响本次请求，库也不会修改它。
-     * - **不写入任何实例状态**：请求缓冲是本次流的局部变量，工具调用循环写入的 assistant/tool
-     *   消息也只进该缓冲，流结束后即丢弃，连续调用互不影响。
+     * - 调用时即对 [messages] 取快照（不可变拷贝），之后修改该列表不影响本次请求，库也不会修改它。
+     * - **不写入任何实例状态**：请求缓冲在每次收集时新建（Flow 是冷的，可安全重复收集：重试、
+     *   多消费者都会各自以同一份快照重新发请求），工具调用循环写入的 assistant/tool 消息也只进
+     *   该缓冲，流结束后即丢弃。
      * - 失败或取消时同样只影响局部缓冲（实例没有可回滚的状态）。
      *
      * 注意：若 [messages] 首条已是 system 消息而实例又设置了 `prompt`，请求中会出现两条
@@ -154,12 +155,14 @@ public class StatelessDeepseek(
      * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
      */
     public fun chatStream(messages: List<Message>, hook: SseHook? = null): Flow<ChatChunk> {
-        // 调用时快照：本次请求的输入在返回 Flow 之前就已确定
-        val history = mutableListOf<Message>().apply {
-            core.systemPromptMessage?.let { add(it) }
-            addAll(messages)
-        }
+        // 调用时快照：本次请求的输入在返回 Flow 之前就已确定，之后修改传入列表不影响本 Flow
+        val snapshot = messages.toList()
         return core.streamFlow { session ->
+            // 每次收集都新建请求缓冲：Flow 是冷的，重复收集（重试/多消费者）不得复用上一轮的缓冲
+            val history = mutableListOf<Message>().apply {
+                core.systemPromptMessage?.let { add(it) }
+                addAll(snapshot)
+            }
             streamLoop(core, history, null, hook, session)
         }
     }

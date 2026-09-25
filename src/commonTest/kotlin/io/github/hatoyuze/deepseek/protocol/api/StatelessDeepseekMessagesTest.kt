@@ -86,6 +86,21 @@ class StatelessDeepseekMessagesTest {
     }
 
     @Test
+    fun `chatStream with messages can be collected repeatedly with the same request body`() = runTest {
+        val seen = mutableListOf<List<Message>>()
+        val ds = stateless(seen)
+        val messages = listOf(Message(Role.User, "u1"))
+
+        val response = ds.chatStream(messages)
+        response.toList()
+        response.toList()
+
+        assertEquals(2, seen.size, "重复收集同一个 Flow 应各发一次请求")
+        assertEquals(listOf(system, Message(Role.User, "u1")), seen[0])
+        assertEquals(seen[0], seen[1], "重复收集不得复用上一轮的请求缓冲（Flow 是冷的）")
+    }
+
+    @Test
     fun `chatStream with messages snapshots the caller list at call time and never mutates it`() = runTest {
         val seen = mutableListOf<List<Message>>()
         val ds = stateless(seen)
