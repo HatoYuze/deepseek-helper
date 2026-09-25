@@ -6,6 +6,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -21,8 +22,12 @@ import kotlin.test.assertTrue
 /**
  * JVM 重压测试：真实并行调度下验证历史替换/清空的并发契约（D1）。
  *
- * 契约：替换/清空会先取消活跃流；替换是整体换表，被取消流的回滚不可能撤销替换结果；
- * 换表通过 `@Volatile` 引用发布，因此在**没有活跃流写入**时并发读取只会看到完整的某一份历史。
+ * 覆盖范围（不要过度解读）：
+ * - 替换/清空与活跃流的竞态：替换会先取消活跃流，且被取消流的回滚只删掉自己写入的消息；
+ * - 替换风暴与并发读取的重叠：换表是对表引用的单次原子写，读者只会看到完整的某一份历史；
+ * - 串行化使用下（契约要求）连续历史操作的状态确定性。
+ *
+ * 不覆盖：与活跃流的**追加**并发读取（契约明确不支持，见 `Deepseek` KDoc「线程模型与并发契约」）。
  */
 class DeepseekHistoryStressTest {
 
@@ -97,38 +102,41 @@ class DeepseekHistoryStressTest {
         val accepted = setOf(listA, listB, listOf(system))
 
         val torn = ConcurrentLinkedQueue<String>()
-        val afterStorm = ConcurrentLinkedQueue<List<Message>>()
-        val barrier = CompletableDeferred<Unit>()
+        val readsDuringStorm = AtomicInteger()
+        val readersReady = AtomicInteger()
+        val stormRunning = AtomicBoolean(false)
+        val stormDone = AtomicBoolean(false)
         val readers = (1..8).map { id ->
             launch(Dispatchers.Default) {
-                repeat(2_000) {
+                readersReady.incrementAndGet()
+                // 自旋等待风暴结束：读者必然与替换风暴重叠（有上限，避免失败时挂死）
+                var iterations = 0
+                while (!stormDone.get() && iterations < 5_000_000) {
                     val snapshot = ds.messages
+                    if (stormRunning.get()) readsDuringStorm.incrementAndGet()
                     if (snapshot !in accepted) torn += "reader-$id: ${snapshot.map { it.content }}"
+                    iterations++
                 }
-                barrier.await()
-                afterStorm += ds.messages
             }
         }
+        withTimeout(10_000) { while (readersReady.get() < 8) delay(1) }
 
-        val writer = launch(Dispatchers.Default) {
-            repeat(3_000) { i ->
-                when (i % 3) {
-                    0 -> ds.replaceHistory(listA)
-                    1 -> ds.replaceHistory(listB)
-                    else -> ds.clearHistory()
-                }
+        stormRunning.set(true)
+        repeat(3_000) { i ->
+            when (i % 3) {
+                0 -> ds.replaceHistory(listA)
+                1 -> ds.replaceHistory(listB)
+                else -> ds.clearHistory()
             }
         }
-        withTimeout(60_000) { writer.join() }
         val expected = ds.messages
-        assertTrue(expected in accepted, "最终历史应为某次安装的完整历史，实际: ${expected.map { it.content }}")
-
-        barrier.complete(Unit)
+        stormDone.set(true)
         withTimeout(60_000) { readers.joinAll() }
 
+        assertTrue(expected in accepted, "最终历史应为某次安装的完整历史，实际: ${expected.map { it.content }}")
+        assertTrue(readsDuringStorm.get() > 0, "读者必须与替换风暴真正重叠，实际重叠读取次数=${readsDuringStorm.get()}")
         assertTrue(torn.isEmpty(), "并发读取不得看到撕裂/混合的历史，实际: ${torn.take(3)}")
-        assertEquals(8, afterStorm.size, "每个 reader 都应在风暴后读取一次")
-        assertTrue(afterStorm.all { it == expected }, "风暴后读取应与最终安装的历史一致")
+        assertEquals(expected, ds.messages, "风暴结束后历史应保持稳定")
     }
 
     @Test

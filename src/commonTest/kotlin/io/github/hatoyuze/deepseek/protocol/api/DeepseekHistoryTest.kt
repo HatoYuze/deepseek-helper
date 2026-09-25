@@ -4,7 +4,6 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
 /**
@@ -119,10 +118,10 @@ class DeepseekHistoryTest {
 
         val snapshot = ds.messages
         ds.addMessage(Message(Role.User, "later"))
+        ds.replaceHistory(listOf(Message(Role.System, "other")))
 
         assertEquals(listOf(user1, assistant1), snapshot, "messages 返回快照，不应随实例变化")
-        assertEquals(listOf(user1, assistant1, Message(Role.User, "later")), ds.messages)
-        assertNotSame(snapshot, ds.messages, "每次读取 messages 都应返回独立快照")
+        assertEquals(listOf(Message(Role.System, "other")), ds.messages)
     }
 
     @Test
