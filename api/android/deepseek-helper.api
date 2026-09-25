@@ -284,6 +284,8 @@ public final class io/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek : 
 	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun cancelStream ()V
 	public fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public final fun chatStream (Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public fun getApiKey ()Ljava/lang/String;

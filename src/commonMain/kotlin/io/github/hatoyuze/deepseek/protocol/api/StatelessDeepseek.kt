@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 不保存聊天历史的 [ChatClient] 实现。
  *
- * 每次调用 [chatStream] 都会创建一个仅含 system prompt 的本地消息缓冲，
- * 对话结束后即丢弃，不会在实例上累积任何历史；适合无状态的一次性问答场景。
+ * 每次调用 [chatStream] 都会创建一个本地消息缓冲（仅含 system prompt，或 `prompt` + 传入的
+ * 完整消息列表），对话结束后即丢弃，不会在实例上累积任何历史；适合无状态的一次性问答场景。
  *
  * ```kotlin
  * val ds = statelessDeepseek("sk-xxx") {
@@ -22,9 +22,12 @@ import kotlinx.coroutines.flow.Flow
  *     config { thinkingMode = ThinkingMode.Max }
  * }
  * ds.chatStream("你好").collect { ... }
+ *
+ * // 从持久化记录重建完整上下文后一次性请求（不追加 user，实例不留状态）
+ * ds.chatStream(messagesFromDatabase).collect { ... }
  * ```
  *
- * 与 [Deepseek] 不同，无状态实例不提供 `messages`、`addMessage`、`truncateAt`
+ * 与 [Deepseek] 不同，无状态实例不提供 `messages`、`addMessage`、`replaceHistory`、`truncateAt`
  * 等历史操作；[toolHost]、[executionContext]、[config]、[cancelStream]、
  * [availableModels]、[balance] 等行为与 [Deepseek] 一致。
  *
@@ -122,6 +125,44 @@ public class StatelessDeepseek(
             }
             streamLoop(core, history, userContent, hook, session)
         }
+
+    /**
+     * 以完整消息列表发起一次性流式对话，用于「从持久化记录重建上下文后发一轮请求」。
+     *
+     * 本次请求的全部输入 = 构造期 system prompt（若设置了 `prompt`）+ 传入的 [messages]：
+     *
+     * - **不追加 user 消息**：[messages] 就是完整对话（最后一条通常是本轮 user 消息）。
+     *   「重新生成 / 继续生成」只需把截断后的完整列表传进来，无需另一个入口。
+     * - 调用时即对 [messages] 取快照，之后修改该列表不影响本次请求，库也不会修改它。
+     * - **不写入任何实例状态**：请求缓冲是本次流的局部变量，工具调用循环写入的 assistant/tool
+     *   消息也只进该缓冲，流结束后即丢弃，连续调用互不影响。
+     * - 失败或取消时同样只影响局部缓冲（实例没有可回滚的状态）。
+     *
+     * 注意：若 [messages] 首条已是 system 消息而实例又设置了 `prompt`，请求中会出现两条
+     * system 消息；需要完全按传入列表精确控制上下文时，请使用 `prompt = null` 的实例。
+     *
+     * ```kotlin
+     * val ds = statelessDeepseek("sk-xxx") { prompt = null }
+     * val messages = messagesFromDatabase // 完整对话序列，含 system / user / assistant / tool
+     * ds.chatStream(messages).collect { ... }
+     * ```
+     *
+     * 并发：与字符串重载一致，同一实例上的多个流互不干扰（每次调用各自持有私有缓冲）。
+     *
+     * @param messages 本次请求的完整消息列表（不含构造期 system prompt，不追加 user）
+     * @param hook 可选的实时回调，与 Flow 事件一致
+     * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
+     */
+    public fun chatStream(messages: List<Message>, hook: SseHook? = null): Flow<ChatChunk> {
+        // 调用时快照：本次请求的输入在返回 Flow 之前就已确定
+        val history = mutableListOf<Message>().apply {
+            core.systemPromptMessage?.let { add(it) }
+            addAll(messages)
+        }
+        return core.streamFlow { session ->
+            streamLoop(core, history, null, hook, session)
+        }
+    }
 
     /**
      * 发起流式 FIM（Fill In the Middle）补全请求。
