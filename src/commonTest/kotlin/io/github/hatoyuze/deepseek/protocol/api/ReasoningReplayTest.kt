@@ -33,10 +33,10 @@ import kotlin.test.assertTrue
  * 思考内容（`reasoning_content`）必须**原样回传**。
  *
  * 规则是**请求级**的（DeepSeek 官方 thinking-mode 文档）：请求带 `tools` 时，历史里所有轮次的
- * `reasoning_content` 都必须完整回传，包括没有发生工具调用的轮次，缺任意一轮 API 直接返回 400
+ * `reasoning_content` 都必须完整回传，包括没有发生工具调用的轮次，官方文档明示缺失即 400
  * （"The `reasoning_content` in the thinking mode must be passed back to the API"）；请求不带
- * `tools` 时服务端忽略该字段。曾经的实现无条件执行 `withoutReasoningContent()` 把它剥掉，
- * 于是带工具的多轮请求全部非法——「继续生成」按下去必然失败。
+ * `tools` 时服务端忽略该字段。曾经的实现无条件执行 `withoutReasoningContent()` 把它剥掉：既违反
+ * 该规则，也让库内历史里已经记下的思考内容进不了请求。
  *
  * 本文件的两层断言分工，缺一不可：
  * - **history 级**（用 [GatedBackend]）：库自己写进历史的消息是否带上了正确的思考内容。

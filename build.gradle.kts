@@ -121,6 +121,19 @@ kotlin {
     }
 }
 
+/**
+ * 线上用例（`DeepseekApiTest` / `ImageInputLiveTest`）的凭据转发。
+ *
+ * Gradle 只把命令行 `-D` 交给构建进程，**不会**自动转发给 fork 出来的测试 JVM。不显式转发时，
+ * `./gradlew jvmTest -Ddeepseek.api.key=…` 会通过 `assumeTrue` **静默跳过**所有线上用例——
+ * 看起来"跑过了"，其实一个请求都没发出去（实测：转发前 skipped=1，转发后 skipped=0）。
+ *
+ * 环境变量 `DEEPSEEK_API_KEY` 本来就能到达测试 JVM，无需在此转发；两条路等价。
+ */
+tasks.withType<Test>().configureEach {
+    System.getProperty("deepseek.api.key")?.let { systemProperty("deepseek.api.key", it) }
+}
+
 if (androidEnabled) {
     extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
         namespace = "io.github.hatoyuze.deepseek"

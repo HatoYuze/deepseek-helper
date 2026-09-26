@@ -39,6 +39,17 @@ private data class WeatherData(val city: String, val weather: String, val temper
 @Serializable
 private data class CalcResult(val a: Double, val b: Double, val operation: String, val result: Double)
 
+/**
+ * 纯管道用例的 token 上限。
+ *
+ * 思考模式**默认开启**，推理 token 与 `content` 共用 `max_tokens`。这类用例只想验证「请求通、
+ * 拿到回复、用量上报」这条管道，一旦上限给小（比如 128），推理就能把预算吃完，模型合法地返回
+ * `finish_reason=length` + 空 `content`，断言「回复不应为空」随机失败——线上用例本来就跑在 CI 上，
+ * 这种抖动会变成莫名其妙的红灯。给足空间（与 [DeepSeekApiTest] 里思考用例同量级）即可，
+ * 代价只有几十个 token。
+ */
+private const val MAX_TOKENS_FOR_PLUMBING_TESTS = 1024
+
 @OptIn(ExperimentalDeepseekApi::class)
 class DeepSeekApiTest {
 
@@ -96,7 +107,7 @@ class DeepSeekApiTest {
     fun `simple chat returns valid response`() = runBlocking {
         withTimeout(60.seconds) {
             val ds = deepseek(apiKey) {
-                config { maxTokens = 128 }
+                config { maxTokens = MAX_TOKENS_FOR_PLUMBING_TESTS }
             }
 
             val response = ds.chatStream("用一句话介绍 Kotlin 语言")
@@ -138,7 +149,7 @@ class DeepSeekApiTest {
         withTimeout(60.seconds) {
             val ds = statelessDeepseek(apiKey) {
                 prompt = "You are a concise assistant."
-                config { maxTokens = 128 }
+                config { maxTokens = MAX_TOKENS_FOR_PLUMBING_TESTS }
             }
 
             val first = ds.chatStream("用一句话介绍 Kotlin")
