@@ -37,7 +37,14 @@ public enum class Role {
  *   会先抛出 [IllegalArgumentException]（fail-fast）
  * - [toolCallId] 仅在 role 为 [Role.Tool] 时有效
  * - [toolCalls] 仅在 role 为 [Role.Assistant] 且模型请求工具调用时有效
- * - [reasoningContent] 为 Beta 特性，需要启用 [io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi]
+ * - [reasoningContent] 为 Beta 特性，需要启用 [io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi]。
+ *   官方规则（Thinking Mode 文档）：请求**带 `tools`** 时，历史里**所有轮次**的 `reasoning_content`
+ *   都必须完整回传（含没有发生工具调用的轮次），缺任意一轮 API 直接返回 `400`
+ *   （"The `reasoning_content` in the thinking mode must be passed back to the API"）；
+ *   请求不带 `tools` 时服务端忽略该字段。因此历史由调用方自行构造（`replaceHistory`、无状态调用、
+ *   持久化日志回放）时，只要配了工具，就必须保留模型产出的 `reasoningContent`；模型未思考的轮次
+ *   保持 `null`，不要写空串。注意 `buildDeepseekMessages` 的 `says` 不携带该字段，重建带工具的
+ *   assistant 消息请改用 `add(Message(..., reasoningContent = …))`
  *
  * ```kotlin
  * // 纯文本：String 会隐式转换为 MessageContent.Text

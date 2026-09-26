@@ -2,6 +2,35 @@
 
 本仓库遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）。发布记录见下，最新版本在前。
 
+## [0.4.1] - 2026-09-26
+
+> 0.4.1 修一个会让**带工具的多轮请求全部失败**的协议错误：0.4.0 在装配请求体时无条件剥离了
+> `reasoning_content`，而 DeepSeek 思考模式的规则是**请求级**的——请求**带 `tools`** 时，历史里
+> **所有轮次**的 `reasoning_content` 都必须完整回传（含没有发生工具调用的轮次），缺任意一轮 API
+> 直接返回 400（`The reasoning_content in the thinking mode must be passed back to the API`）；
+> 请求不带 `tools` 时服务端忽略该字段，因此无需按 `tools` 是否存在分流。
+> API 层面完全向后兼容（`Message.reasoningContent` 本就存在，只是过去不会被发送，现在会），
+> 因此按 patch 发布。
+>
+> 行为影响：带 `tools` 的多轮请求会把历史里各轮的思考内容一并发送，并**被服务端拼接进上下文**，
+> 因此 prompt token 会相应上升；这是官方要求的行为，不是本次修复引入的开销。不带 `tools` 时该字段
+> 仍会随历史一起上传（服务端忽略、不计入上下文），这是为了不按 `tools` 分流——那正是本次修掉的
+> 错误来源。另外，接到 `HttpHook` 的请求体日志从本版起包含思考内容（脱敏规则不变，仍只看文本形状）。
+
+### 修复
+
+- **思考内容不再在装配请求体时被剥离**
+  > 删除内部的 `withoutReasoningContent()`：调用方（如经 `replaceHistory` 传入的持久化历史）放进
+  > `Message.reasoningContent` 的内容会原样出现在请求里。规则是请求级的：不带 `tools` 时服务端
+  > 忽略该字段，因此无需按 `tools` 是否存在分流
+- **流式对话把思考内容写进历史**
+  > `streamLoop` 过去只把 `content` 写进历史、丢掉 `reasoning_content`，于是「隔一轮再问」时请求里
+  > 就少了这个必需字段。现在每条 assistant 消息——包括工具轮里那条 `tool_calls` 消息——都带上
+  > **产生它的那一轮**思考；模型这一轮没有思考时字段保持 `null`（不写空串）
+- **公开契约补上回传规则**
+  > `Message.reasoningContent` 的 KDoc 与 README 写清「带 `tools` 时必须完整回传、不带 `tools` 时
+  > 服务端忽略」，避免自行构造历史（持久化回放、DSL 拼装、无状态调用）的调用方丢掉该字段
+
 ## [0.4.0] - 2026-09-26
 
 > **⚠️ 兼容性提示（升级前请读）**：本版包含**三处二进制不兼容变更**，下游**必须重新编译**：

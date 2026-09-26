@@ -16,7 +16,7 @@ It supports interruption, regeneration, custom Tool Call behavior, FIM completio
 ```kotlin
 // build.gradle.kts (commonMain)
 dependencies {
-    implementation("io.github.hatoyuze:deepseek-helper:0.4.0")
+    implementation("io.github.hatoyuze:deepseek-helper:0.4.1")
 }
 ```
 
@@ -150,6 +150,14 @@ ds.continueStream()
 > This overload appends no user message (`messages` is the whole conversation), snapshots the list at call
 > time and keeps no instance state; the construction `prompt` is still prepended to every request, so use
 > an instance with `prompt = null` when you do not want an extra system message.
+
+> **`reasoning_content` must be kept**: the rule is **request-level** — whenever a request carries `tools`,
+> the `reasoning_content` of **all** previous turns must be passed back (including turns where the model
+> did not call a tool); missing any turn makes the API return `400`. Without `tools` the server ignores the
+> field. So when you replay a history from a database, keep the reasoning the model produced; leave it
+> `null` for turns where the model did not think (never an empty string). When rebuilding a tool-carrying
+> assistant message with `buildDeepseekMessages`, note that `says` carries no such field — use
+> `add(Message(..., reasoningContent = …))` instead.
 
 If you want to interrupt a stream, use `cancelStream()`. It cancels the stream
 collection coroutine and aborts the underlying request (closes the connection and

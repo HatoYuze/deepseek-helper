@@ -55,6 +55,11 @@ internal class Network(
      *
      * 注意：这是**跨全部请求路径**的统一策略（chat / responses / FIM 的 JSON 请求体、
      * Files 上传的 multipart 摘要），不是只针对新加的图片路径。
+     *
+     * 规则之外的内容按原样进入日志，**其中包括模型自己写下的文本**：0.4.1 起带 `tools` 的请求会
+     * 回传历史里的 `reasoning_content`（官方强制要求），思考内容因此也会出现在 hook 收到的请求体里。
+     * 思考内容可能引用工具返回的数据，而上面的替换只看文本形状（含不含空白、是否超长），不看字段
+     * 语义，所以把 hook 接到长期日志或第三方可观测平台时，请自行评估留存策略。
      */
     private fun fireRequestHooks(method: String, fullUrl: String, requestBody: String?) {
         val safeBody = requestBody?.let(::redactForHook)

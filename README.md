@@ -14,7 +14,7 @@
 ```kotlin
 // build.gradle.kts (commonMain)
 dependencies {
-    implementation("io.github.hatoyuze:deepseek-helper:0.4.0")
+    implementation("io.github.hatoyuze:deepseek-helper:0.4.1")
 }
 ```
 
@@ -140,6 +140,8 @@ ds.chatStream(messages).collect { ... }
 **注意**：如果 `messages` 为历史记录，你可能还需要手动添加最新的用户信息，它的作用是将传入的 message 原封不动地传入 Deepseek API
 
 其中， `StatelessDeepseek` 对其的操作是只读的，在发送信息时我们会提前调用 `toList` 转换为确定的列表后再进行调用.
+
+> **思考内容（`reasoning_content`）必须保留**：官方规则是**请求级**的——只要请求**带 `tools`**，历史里**所有轮次**的 `reasoning_content` 都必须完整回传（含没有发生工具调用的轮次），缺任意一轮 API 直接返回 `400`；请求不带 `tools` 时服务端忽略该字段。因此从数据库 / 日志回放历史时，不要丢掉模型产出的思考内容；模型未思考的轮次保持 `null`（不要写空串）。用 `buildDeepseekMessages` 重建带工具的 assistant 消息时注意：`says` 不携带该字段，请改用 `add(Message(..., reasoningContent = …))`。
 
 对于标准的单会话语义`Deepseek`，你可以基于 `List<Message>` 修改 / 替换 `Deepseek` 所持有的聊天记录，以下为一些基本的示例
 
