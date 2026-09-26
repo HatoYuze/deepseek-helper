@@ -38,7 +38,7 @@ val ds = deepseek("<Your Deepseek Key>") { // Use DSL to build a Deepseek instan
     config {
         thinkingMode = ThinkingMode.Max // Maximum reasoning strength (thinking enabled by default)
     }
-    model { pro() }
+    model { flash() } // deepseek-flash, the only currently recommended model (also the default)
     tools {
         tool("get_weather") {
             parameters {
@@ -60,7 +60,9 @@ Of course, you can also use a simpler creation method, e.g.
 val ds = Deepseek("<Your Deepseek Key>") // Directly build a Deepseek instance
 ```
 
-If no model is explicitly specified, the library defaults to the hardcoded `deepseek-v4-flash`. It does **not** fetch available models from `/model`. To retrieve the latest model list for your account, call `ds.availableModels()` and select a model using `Model.ofModel`.
+If no model is explicitly specified, the library defaults to the hardcoded `deepseek-flash` (the only model the API currently recommends; it serves both text and image input). It does **not** fetch available models from `/models`. To retrieve the latest model list for your account, call `ds.availableModels()` and select a model using `Model.ofModel`.
+
+> The `deepseek-v4-pro` / `deepseek-v4-flash` names have been retired: the server still accepts them but serves them with `deepseek-flash` (measured token usage is identical to `deepseek-flash`). The library therefore no longer offers `Model.Pro` or `model { pro() }`; send a legacy name explicitly with `model { custom("deepseek-v4-pro") }` if you really need to. Note that the `/models` endpoint may lag behind and still list these retired names — being callable is the real criterion.
 
 Then, you can start a chat:
 
@@ -97,13 +99,18 @@ if (response.content.isNotEmpty()) {
 println("── ${response.usage.totalTokens} tokens")
 ```
 
-Each `Deepseek` instance holds all chat history in the conversation:
+#### A short introduction to the Deepseek and StatelessDeepseek clients
+
+Each `Deepseek` instance holds all chat history in the conversation, whereas `StatelessDeepseek` is a
+stateless client that keeps no history.
 
 ```kotlin
 // Read the whole history (a snapshot taken at call time, starting with the system prompt)
 val messages: List<Message> = ds.messages // every read copies; poll getMessageCount() instead
 ds.getMessageCount()
-ds.findUserMessageIndex("introduce yourself in one sentence")
+
+// Index of the first user message whose text equals the given string (-1 when not found)
+val userIndex = ds.findUserMessageIndex("introduce yourself in one sentence")
 
 // Set the context to any message sequence in one call (exact replacement, no prompt injection)
 ds.replaceHistory(messagesFromDatabase)
@@ -112,7 +119,6 @@ ds.replaceHistory(messagesFromDatabase)
 ds.clearHistory()
 
 // "Regenerate": trim to the target user message and continue
-val userIndex = ds.findUserMessageIndex("introduce yourself in one sentence")
 ds.replaceHistory(ds.messages.take(userIndex + 1))
 ds.continueStream()
 ```
@@ -202,12 +208,11 @@ This maps `/responses` events to the currently supported `ChatChunk` types:
 
 `fimStream` requests `{baseUrl}/beta/completions` (the official
 `https://api.deepseek.com` by default). It uses
-`modelForFim` (default `deepseek-v4-pro`) and reuses `maxTokens`, `temperature`,
+`modelForFim` (default `deepseek-flash`) and reuses `maxTokens`, `temperature`,
 `topP`, `stop`, `includeUsage`, and `topLogprobs` from `config`.
 
 ```kotlin
 val ds = deepseek("<Your Deepseek Key>") {
-    model { pro() } // The official FIM API currently supports only deepseek-v4-pro
 }
 
 val response = ds.fimStream(
@@ -219,37 +224,24 @@ println(response.text)
 println("Used ${response.usage.totalTokens} tokens")
 ```
 
-#### Message Building DSL (recommended for image conversations)
+#### Message Building DSL — supplementary notes
 
-Hand-writing content blocks is verbose, so the library ships a `buildDeepseekMessages` DSL:
-declare each message with `Role.X says ...` and combine images with text using `+`.
+The DSL itself is introduced in the section above; this part only covers the details that do not fit
+into an example.
 
-```kotlin
-val image = imageOf("photos/cat.jpg")   // local file: read and inlined as base64, MIME sniffed
-
-val messages = buildDeepseekMessages {
-    Role.System says "You are a helpful assistant"
-
-    Role.User says image + "What is its content"
-
-    Role.Assistance says "This image describes a scene that ..."
-}   // returns List<Message> — ready for replaceHistory / chatStream
-
-ds.chatStream(messages[1].content!!).collectResponse()
-```
-
-`imageOf(...)` accepts several sources, with a fixed and predictable dispatch order:
+**How `imageOf` dispatches on its source** (fixed order; the parameter is `Any`):
 
 | Input | Behaviour |
 |---|---|
-| `ByteArray` | inlined as a base64 data URL; MIME sniffed from **magic bytes** (JPEG / PNG / GIF / WebP) |
-| `FileSource` (`Bytes` / `Path`) | read then inlined; the library does **not** close it (use `use {}` yourself) |
-| `"https://…"` / `"data:…"` | passed through as a remote link / already-encoded data URL |
-| any other `String` | treated as a **local file path**, read and inlined |
+| `ByteArray` | inlined as a base64 data URL, MIME sniffed from **magic bytes** (JPEG / PNG / GIF / WebP, falling back to `image/jpeg`) |
+| `FileSource` (`Bytes` / `Path`) | read and inlined; the library does **not** close it |
+| `"http://…"` / `"https://…"` / `"data:…"` | treated as a remote link or an already-encoded data URL and passed through |
+| any other `String` | treated as a local file path, read and inlined |
 | JVM / Android extensions | `File`, `java.net.URI` (including `file:`), `InputStream` |
 
-To reference an already-uploaded image by `file_id`, use `imageFileOf(...)` (a plain string in
-`imageOf` means URL/path, and a `file-api-…` id is neither):
+**Referencing an uploaded image by `file_id` requires `imageFileOf(...)`**, not `imageOf("file-api-…")`:
+a string in `imageOf` means a URL or a path, and a `file-api-…` id is neither — it would be read as a
+file path.
 
 ```kotlin
 val uploaded = ds.files().upload("photos/cat.jpg", "image/jpeg")
@@ -259,120 +251,101 @@ val messages = buildDeepseekMessages {
 }
 ```
 
-How `+` combines content (both sides are content; order is concatenation order):
+**Both sides of `+` are content**, and the order is the order of concatenation. To put text first, use
+`MessageContent.textPart`: `"text" + imageOf(...)` is resolved by Kotlin to the standard library's
+`String.plus(Any?)` and yields a string.
 
 ```kotlin
-imageOf(bytes) + "describe it"                 // image + text
-imageOf(a) + imageOf(b)                        // two images
-imageOf(a) + imageOf(b) + "compare them"        // chained
-MessageContent.textPart("First: ") + imageOf(a) // text block first
+imageOf(a) + "describe it"                        // image + text
+imageOf(a) + imageOf(b) + "compare these two"      // chained
+MessageContent.textPart("First: ") + imageOf(a)    // text block first
 ```
 
-> `"text" + imageOf(...)` (string on the left) does **not** hit this library's operator — Kotlin
-> resolves it to stdlib's `String.plus(Any?)` and you get a string back. Put the text block first
-> with `MessageContent.textPart("text") + imageOf(...)` instead.
+> **Synchronous semantics**: `imageOf` reads files on the **calling thread** (the library never switches
+> dispatchers), so use `withContext(Dispatchers.IO)` for large images or on the UI thread. Read failures
+> throw `FileSourceReadException`; an unsupported source type, a blank URL, or inline bytes over 32 MiB
+> throw `IllegalArgumentException` — never a silent failure.
 >
-> The DSL is synchronous: `imageOf` reads local files on the calling thread, so use
-> `withContext(Dispatchers.IO)` for large images or on the UI thread. Read failures throw
-> `FileSourceReadException`; unsupported sources / blank URLs / oversized bytes throw
-> `IllegalArgumentException` (never a silent failure).
+> **Convenience entry points**: `imagePartOf(...)` returns the block itself (for inserting into a list by
+> hand), and `imageBytesOfResource("/x.jpg")` / `fileSourceOfResource("/x.jpg")` /
+> `imageResourceUrl("/x.jpg")` load classpath resources as images (JVM / Android).
 
-#### Image Input (Vision)
+#### Image Input (Vision) — supplementary notes
 
-`deepseek-flash` accepts images alongside text: `Message.content` can be a **content block array**
-(`MessageContent` / `ContentPart`) instead of plain text. All three official ways to send an image
-are supported.
+The three ways to send an image (inline base64 / external URL / `file_id`) are shown above; this part
+covers the constraints that do not fit into an example.
 
-```kotlin
-// 1) Inline base64 — simplest for a local file (<= 32 MiB per image, counts toward the 48 MiB body limit)
-val jpegBytes: ByteArray = readLocalFile("cat.jpg")
+**Referencing by `file_id` emits a `file` content block, not an `image_url` block** —
+`MessageContent.imageFile(fileId)` and `ContentPart.ImagePart(fileId = …)` both serialize to
+`{"type":"file","file_id":"file-api-…"}`. Putting a `file_id` inside an `image_url` block is rejected by
+the server with `400 invalid_request_error: missing field url`; conversely, an `image_url` block only
+accepts `url`.
 
-val response = ds.chatStream(
-    MessageContent.of(
-        MessageContent.textPart("What is in this image?"),
-        MessageContent.imageDataUrl("image/jpeg", jpegBytes), // the library encodes the base64 for you
-    ),
-).collectResponse()
+**Detail level** is controlled by `ImageUrlDetail`: `Low` downscales to 512×512 (faster, fewer tokens),
+while `High` / `Original` / `Auto` keep the original image (`Auto` is the default and currently equals
+`Original`). The field is ignored by the server when a `file_id` is used.
 
-// 2) External image URL — the model downloads it (URL <= 8192 chars, image <= 32 MiB, fetched within 60s)
-ds.chatStream(MessageContent.image("https://example.com/cat.jpg")).collectResponse()
+**Official limits** (the library only fails fast on what it can decide locally — see the public
+constants `MessageContent.MAX_INLINE_IMAGE_BYTES` = 32 MiB and `MAX_IMAGE_URL_LENGTH` = 8192):
 
-// 3) Files API — upload once, reuse across requests (<= 64 MiB per image, recommended)
-val uploaded = ds.files().upload("cat.jpg", "image/jpeg")
-ds.chatStream(MessageContent.imageFile(uploaded.id)).collectResponse()
-```
+| Limit | Value |
+|---|---|
+| Image formats | JPEG / PNG / GIF / WebP, decided by the **file content**, not by the name or declared MIME |
+| Single image size | inline base64 or external URL ≤ 32 MiB; `file_id` ≤ 64 MiB |
+| Request body size | inline data counts toward it; limit 48 MiB |
+| Images per request | ≤ 600; ≤ 64 MiB in total excluding `file_id` images, up to 200 MiB including them |
+| External URL | ≤ 8192 characters, and it must be downloadable by the server within 60 seconds |
+| Placement | **user messages only** — anywhere else the library throws `IllegalArgumentException` **before** sending a request |
 
-If you would rather pass the blocks directly, use the list overload:
+> **Migration notes (0.4.0)**: `Message.content` is now `MessageContent?` instead of `String?`, so read
+> text with `message.content?.asText()`; string literals such as `Message(Role.User, "hi")` still work.
+> `Role.Assistance` has been renamed to `Role.Assistant`, and `Model.Pro` / `model { pro() }` were removed
+> when the v4 models were retired (use `model { flash() }` or `model { custom("…") }`).
 
-```kotlin
-ds.chatStream(
-    listOf(
-        MessageContent.textPart("Describe this image"),
-        ContentPart.ImagePart(imageUrl = "https://example.com/cat.jpg", detail = ImageUrlDetail.Low),
-    ),
-).collectResponse()
-```
+#### Files API — supplementary notes
 
-Detail level (`ImageUrlDetail`): `Low` downscales to 512x512 (faster, fewer tokens);
-`High` / `Original` / `Auto` keep the original image (`Auto` is the default and currently equals
-`Original`).
-
-> Images are only allowed in **user** messages: putting an image into a system or assistant message
-> throws `IllegalArgumentException` before any request is sent, instead of waiting for a 400.
->
-> Read text out of history with `message.content?.asText()` (a content-block message may have no text
-> block at all). String literals such as `Message(Role.User, "hi")` still compile.
-
-#### Files API (Upload Images Once, Reuse Them)
+What `DeepseekFiles` is and how it is isolated is explained above; this part covers the operations and
+the platform differences.
 
 ```kotlin
 val files = ds.files()
 
-// Upload: mimeType is only a multipart hint — the server decides the format from the file content
-val uploaded = files.upload("photos/cat.jpg", "image/jpeg")
-
-// With an expiry (1 hour to 30 days); omit it and the file never expires
-val temporary = files.upload(
-    FileSource.Bytes(jpegBytes),
-    mimeType = "image/jpeg",
-    filename = "cat.jpg",
-    options = UploadOptions(expiresAfterSeconds = 3600),
+// Upload: mimeType is only the multipart Content-Type hint, the server decides the format from content
+val uploaded = files.upload("photos/cat.jpg", "image/jpeg")          // filename defaults to the last path segment
+val temp = files.upload(                                              // with an expiry; omit it and the file never expires
+    FileSource.Bytes(jpegBytes), mimeType = "image/jpeg", filename = "cat.jpg",
+    options = UploadOptions(expiresAfterSeconds = 3600),              // 3600..2592000 (1 hour to 30 days)
 )
 
-println(uploaded.id)        // file-api-xxxxxxxxxxxxxxxx
-println(uploaded.expiresAt) // only present when an expiry was set
-
-// Reuse: upload once, reference it in as many requests as you like
-ds.chatStream(MessageContent.imageFile(uploaded.id)).collectResponse()
-
-// List your files with cursor pagination
-var page = files.list(limit = 100)
+files.retrieve(uploaded.id)                              // fetch a single file
+var page = files.list(after = null, limit = 100)         // cursor pagination; limit is 1..1000
 while (page.hasMore) {
-    page.data.forEach { println("${it.filename} ${it.bytes}B") }
     page = files.list(after = page.lastId, limit = 100)
 }
-
-// Retrieve and delete
-val same = files.retrieve(uploaded.id)
-files.delete(uploaded.id)
+files.delete(uploaded.id)                                // delete
 ```
 
-When you want to manage the resource yourself, `FileSource` implements `AutoCloseable`:
+An out-of-range `UploadOptions.expiresAfterSeconds` or `list` `limit` fails fast at **call time**
+(`IllegalArgumentException`) instead of burning a round trip. The return types are `DeepseekFile`
+(`id` / `bytes` / `filename` / `expiresAt` and friends), `FileList` (`data` / `firstId` / `lastId` /
+`hasMore`) and `FileDeletion`.
 
-```kotlin
-openFileSource("photos/cat.jpg").use { source ->
-    ds.files().upload(source, mimeType = "image/jpeg")
-}
-```
+About `FileSource`: it implements `AutoCloseable`, so `use {}` guarantees release on exception and
+cancellation. **Path sources only work on JVM / Android** — on Native / JS / Wasm `readBytes()` throws
+`UnsupportedOperationException`, so use `FileSource.Bytes` there (those platforms need their own APIs to
+read files anyway).
 
-> Path sources (`FileSource.Path`) read the file directly on JVM / Android and throw
-> `FileSourceReadException` on failure; **Native / JS / Wasm do not support path sources**
-> (the Kotlin/Native metadata checker rejects platform number types), so read the bytes yourself and
-> use `FileSource.Bytes`.
+> **Official quotas**: ≤ 64 MiB per file, filename ≤ 512 characters, 25 GiB / 10000 files per user,
+> expiry between 1 hour and 30 days.
 >
-> Official limits: <= 64 MiB per file, filename <= 512 chars, 25 GiB / 10000 files per user,
-> <= 600 images per request. The library only validates what it locally can (expiry range,
-> pagination `limit`, required identifiers).
+> **Cancellation**: `cancelStream()` cancels chat streams only and **does not** affect file operations —
+> cancel the coroutine that called them instead. `readBytes()` is synchronous and not interruptible, and
+> each concurrent upload holds a full copy of the image on the heap, so bound the concurrency yourself
+> (a `Semaphore`, for example).
+>
+> **Memory**: an inline base64 image stays in the conversation history, and every tool-loop iteration
+> re-serializes that history — a 32 MiB image measured ~300 MiB of allocation for one request's JSON
+> encoding. For large images, or images reused across several requests, use `files()` + `file_id`.
 
 ### Some Features
 
@@ -587,6 +560,105 @@ The `ToolCallHost` holds all installed tool call functions. Each `Deepseek` inst
 > </details>
 >
 </details>
+
+#### Security
+
+**The API key**
+- The key is passed once at construction time and then sent as the `Authorization: Bearer <key>` request
+  header — never in a URL, a query string, or a log line; exception messages strip the `Authorization`
+  header before printing request headers (`redactedHeaders()`)
+- The library does **not** store or manage your key: do not hardcode it in a repository, and keep it out of
+  any string that ends up in a crash report. To rotate, create a new `Deepseek` instance (the key is
+  per-instance and immutable after construction)
+- When `baseUrl` points at a **third-party provider**, the key is handed to that provider; the library does
+  not force an upgrade from `http://` to `https://`, so cleartext transport is the caller's decision
+
+**`baseUrl` hardening**
+- Only absolute `http(s)` URLs are accepted, and userinfo (`https://user:pass@host`, which can be used to
+  spoof the target host), query strings and fragments are **rejected** — those components would silently
+  misroute the `host + path` endpoint concatenation, so the client fails fast at construction
+- Failure messages **do not echo** the original URL (the userinfo and query parts may carry credentials)
+
+**Logging and `HttpHook`**
+- `HttpHook` is the logging/debugging extension point, so the request body handed to it is **redacted**:
+  inline base64 data URLs and long whitespace-free payloads become `<redacted N chars>`, and bodies over
+  4096 characters are truncated with a `<truncated N chars>` marker. The request **structure**
+  (model / messages / field names / content block types) is preserved
+- A Files upload never exposes its multipart body to hooks — only a one-line summary (filename, byte count,
+  `purpose`). Local paths and file contents are never written into it
+- Strings that do reach logs (the filename) are validated against an allowlist at the API boundary, so
+  control characters, quotes, backslashes and separators are rejected — no log forging, no leaking of the
+  local directory layout
+
+**Content and boundaries**
+- Images are only accepted in `user` messages and only from `http(s)` / `data:` sources; anywhere else the
+  library throws `IllegalArgumentException` **before** sending a request instead of leaving a guaranteed
+  400 round trip behind
+- Inline image size, external URL length, pagination `limit` and expiry ranges all fail fast locally; server
+  quotas (≤ 64 MiB per image, 25 GiB per user, …) are decided by the server
+- Request bodies are serialized with `explicitNulls = false`, so fields whose value is `null` are omitted
+  entirely rather than sent as meaningless nulls
+
+> Note what the library does **not** do: no content moderation, no image proxying, no SSRF protection —
+> external images are downloaded by DeepSeek's servers, so never pass an internal address as `imageUrl`.
+
+#### Performance characteristics
+
+**Connection reuse**: by default every client shares `DeepseekHttpClientPool.Global`, so one `HttpClient`
+(and one connection pool) is created per `baseUrl`. Replacing `pool.config` / `factory` closes and rebuilds
+the cached clients — do not churn pool configuration at runtime.
+
+**The `tools` array**: tool definitions are read once per stream (`getDefinitions()` is cached) and then
+sent with **every request** — more tools means more input tokens and bandwidth, and that cost is the same
+whether the host is shared or created per client.
+
+**Inline images dominate memory** (measured): a 32 MiB image becomes ~42.7 MiB of base64, one request's JSON
+encoding allocates ~300 MiB (about 390 MiB when the history contains CJK text, since those strings are
+UTF-16), and Ktor needs its own copy of the body bytes. A tool-calling loop repeats all of it — five
+iterations means hundreds of MiB of allocation and roughly five times the base64 upload traffic. Therefore:
+
+- Large images, or images reused across iterations/requests → `files()` + `file_id` (stored once on the
+  server, referenced by a short id in each request)
+- When you must inline → **reuse the same `MessageContent` instance** across requests instead of calling
+  `imageDataUrl(...)` in a loop
+- The 32 MiB inline limit is the official maximum, not a recommendation; the comfortable range is far below it
+
+**Who owns the thread**: `imageOf` / `FileSource.readBytes()` and the file read inside
+`files().upload(...)` are **synchronous** and run on the calling thread. The library never switches
+dispatchers and never reads a file twice for you (`FileSource.Bytes` does not copy the bytes; `Path` reads
+once per call). Use `withContext(Dispatchers.IO)` on the UI thread, and bound concurrent uploads yourself
+(each in-flight upload holds a full copy of the image on the heap).
+
+**Cost under concurrency**: `StatelessDeepseek` supports concurrent streams while `Deepseek` is
+single-session (a new stream cancels the previous one); `DeepseekFiles` is stateless and safe to share —
+that is pinned by tests (20 concurrent uploads stay isolated, and 8 concurrent requests are measurably not
+serialized behind an instance-level lock).
+
+#### Platform differences
+
+| Capability | JVM | Android | Native (iOS/macOS/Linux/Windows) | JS / Wasm |
+|---|---|---|---|---|
+| Default HTTP engine | CIO | OkHttp | CIO | js |
+| Logging | kotlin-logging (SLF4J) | `android.util.Log` | standard output | browser / Node console |
+| `FileSource.Path` | ✅ reads local files | ✅ process-accessible paths (`content://` needs your own readout) | ❌ throws `UnsupportedOperationException` | ❌ throws `UnsupportedOperationException` |
+| Image resource helpers (`imageBytesOfResource`, …) | ✅ | ✅ | ❌ | ❌ |
+| Main-thread blocking risk | yes (`readBytes()` is synchronous) | yes — ANR on the main thread | yes | single-threaded runtime, a long task blocks the whole app |
+| Test coverage | `jvmTest` (incl. stress/concurrency) | `testDebugUnitTest` | `linuxX64Test` (runnable locally) | `jsNodeTest` / `wasmJsNodeTest` |
+
+A few notes:
+
+- **Android** needs the `INTERNET` permission; the default engine is OkHttp, and cleartext `http://` is
+  blocked by the platform's network security config (use `https` for `baseUrl`). The Android target needs a
+  local SDK — when it is missing, Gradle skips that target automatically without affecting the others
+- **Native has no `FileSource.Path`**: not an oversight, but a Kotlin/Native metadata rule that rejects
+  platform number types (`ftell` / `fread`) inside an `actual` declaration; working around it costs more
+  than it is worth. Reading files on Native requires the platform API anyway (`NSData` etc.), so read the
+  bytes and hand them to `FileSource.Bytes`
+- **JS / Wasm have no local filesystem**, so use `FileSource.Bytes` there too; both are single-threaded, so
+  encoding one large image occupies the event loop
+- **Shared behaviour**: everything in `commonMain` (protocol, DSL, content blocks, redaction, fail-fast,
+  history semantics) is identical on every platform — the differences are limited to file reading, log
+  output and the HTTP engine
 
 ### License
 

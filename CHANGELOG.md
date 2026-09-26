@@ -4,11 +4,15 @@
 
 ## [0.4.0] - 2026-09-26
 
-> **⚠️ 兼容性提示（升级前请读）**：本版包含一处**二进制不兼容变更**：
-> `Message.content` 的类型由 `String?` 变为 `MessageContent?`（sealed，纯文本或内容块数组）。
-> Kotlin 源码层面大多无需改动（`Message(Role.User, "hi")` 仍可编译，见下），但**必须重新编译**
-> 下游代码；`copy` / `component2` / `getContent` 的 JVM 签名随之变化，取值请改用
-> `MessageContent.asText()`。因此本版按 minor 发布。
+> **⚠️ 兼容性提示（升级前请读）**：本版包含**三处二进制不兼容变更**，下游**必须重新编译**：
+> 1. `Message.content` 的类型由 `String?` 变为 `MessageContent?`（sealed，纯文本或内容块数组）。
+>    Kotlin 源码层面大多无需改动（`Message(Role.User, "hi")` 仍可编译，见下），但
+>    `copy` / `component2` / `getContent` 的 JVM 签名随之变化，取值请改用 `MessageContent.asText()`
+> 2. `Role.Assistance` → `Role.Assistant`（拼写修正，wire 值不变，见「命名修正」一节）
+> 3. 删除 `Model.Pro` / `ModelSelector.pro()` / `Model.pro(available)`，默认模型改为
+>    `deepseek-flash`（见「模型名更新」一节）
+>
+> 因此本版按 minor 发布。
 
 > 0.4.0 在 0.3.1 之上加入 DeepSeek 的图像输入能力：对话补全与 `/responses` 都能传图
 > （base64 内联 / 外部 URL / Files API `file_id`），并提供完整的 Files 生命周期管理。
@@ -50,7 +54,7 @@
   val messages = buildDeepseekMessages {
       Role.System says "You are a helpful assistant"
       Role.User says image + "What is its content"
-      Role.Assistance says "This image describes a scene that ..."
+      Role.Assistant says "This image describes a scene that ..."
   }
   ```
 
@@ -65,6 +69,33 @@
   提供一个永远不会被调用的扩展是陷阱，文本在前的写法用 `MessageContent.textPart(...) + ...`）
 - **JVM 图片资源工具**：`imageBytesOfResource("/sample.jpg")`、`fileSourceOfResource(...)`、
   `imageResourceUrl(...)`，便于把 classpath 里的图片直接喂给 `imageOf` 或 `files().upload`
+
+### 行为变更 / 兼容性（命名修正）
+
+- **`Role.Assistance` → `Role.Assistant`**：枚举常量名拼写修正（`assistant` 才是正确拼写），
+  **wire 值不变** —— `@SerialName("assistant")` 一直是对的，协议与请求/响应内容零影响。
+  源码与二进制均不兼容，IDE 全局替换 `Role.Assistance` → `Role.Assistant` 即可
+- 该常量**无法用 `@Deprecated` 别名平滑过渡**：枚举里两个 `@SerialName("assistant")` 的常量会被
+  kotlinx.serialization 的**编译器插件在编译期拒绝**（实测 2.3.21 报
+  `Enum class '...' has duplicate serial name 'assistant' in entry '...'`），
+  也就是「加个别名」这条路在本库自身就编译不过，因此只能硬改名
+  （顺带说明：运行期并不会为此抛异常 —— `PluginGeneratedSerialDescriptor.buildIndices()` 对同名
+  条目是**后者覆盖前者**地静默映射，真出现重名会得到「能编译但解码到错误常量」的更隐蔽后果）
+- 新增回归断言：`Role.Assistant` 序列化结果必须仍是 `"assistant"`，并同时锚定
+  `system` / `user` / `tool` 三个角色的 wire 值，防止将来再出现同类拼写漂移
+
+### 行为变更 / 兼容性（模型名更新）
+
+- **默认模型改为 `deepseek-flash`**：`Model.Flash.id` 由 `deepseek-v4-flash` 变为 `deepseek-flash`
+  （官方当前唯一推荐的模型，文本与图像输入都由它承担）。请求里发的 `model` 字段随之变化
+- **删除 `Model.Pro`、`ModelSelector.pro()` 与 `Model.pro(available)`**（二进制不兼容，需重新编译）：
+  `deepseek-v4-pro` 已被官方退役 —— 实测服务端仍接受该名字，但由 `deepseek-flash` 承接
+  （同一请求下两者 token 用量完全一致）
+- **`modelForFim` 默认值由 `Model.Pro` 改为 `Model.Flash`**：FIM 端点仍可用，但 v4-pro 不再是
+  可选项；该属性本身保留，需要别的模型时直接赋值
+- 需要发送退役名字（复现旧行为/对接灰度环境）时用 `model { custom("deepseek-v4-pro") }`；
+  注意 `/models` 端点可能滞后、仍列出这些名字，**能否调用**才是判据（`Model.ofModel` 对任何
+  服务端返回的名字都能查到）
 
 ### 行为变更 / 兼容性
 
@@ -163,6 +194,8 @@
 - 脱敏与文件名边界：data URL 替换、超长不透明载荷替换、超长体截断、普通文本原样通过、
   日志拍平控制字符、Windows/Unix 路径的默认文件名推导、危险文件名与超长文件名被拒
   （异常消息不回显被注入的内容）
+- 模型名单：默认模型 id 断言、DSL 的 `flash()`/`custom()`、FIM 请求体里的 model 字段、
+  `modelForFim` 默认值与覆盖、退役名字仍可用 `ofModel`/`custom` 查到或发出
 - 图片地址与体积的本地 fail-fast：`http(s)` / `data:` 之外被拒、外部 URL 超长被拒、
   data URL 不受 8192 限制、内联字节超 32 MiB 被拒；`asText()` 单趟实现在
   「单文本块 / 文本夹图片 / 连续多文本块 / 全空」下的语义
