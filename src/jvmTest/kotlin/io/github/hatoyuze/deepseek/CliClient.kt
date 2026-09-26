@@ -6,6 +6,8 @@ import com.github.ajalt.mordant.terminal.Terminal
 import io.github.hatoyuze.deepseek.protocol.api.Deepseek
 import io.github.hatoyuze.deepseek.protocol.api.DeepseekApi
 import io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi
+import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
 import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.api.collectResponse
@@ -409,6 +411,108 @@ class DeepSeekApiTest {
 
             assert(response.text.isNotBlank()) { "FIM 补全不应为空" }
             assert(response.usage.totalTokens > 0) { "FIM 用量应 > 0" }
+        }
+    }
+
+    // ── 历史重建（replaceHistory / clearHistory / 无状态完整 messages）──
+
+    @Test
+    fun `replaceHistory makes the rebuilt context the only context the model sees`() = runBlocking {
+        withTimeout(90.seconds) {
+            val ds = deepseek(apiKey) {
+                prompt = "你是一个精确的助手，回答简短。"
+                config {
+                    maxTokens = 64
+                    temperature = 0.0
+                    // 关掉思考：这几个用例验证的是上下文装配，不是推理能力
+                    thinkingMode = ThinkingMode.Disabled
+                }
+            }
+
+            // 第一轮：让模型记住 7391
+            val first = ds.chatStream("请记住：我最喜欢的数字是 7391。只回复“好的”。").collectResponse()
+            assert(first.content.isNotBlank()) { "首轮回复不应为空" }
+
+            // 用另一份历史整体替换：模型上下文必须等价于这份历史，而不是旧的 7391
+            ds.replaceHistory(
+                listOf(
+                    Message(Role.User, "请记住：我最喜欢的数字是 2748。"),
+                    Message(Role.Assistance, "好的，我记住了：2748。"),
+                ),
+            )
+
+            val second = ds.chatStream("我最喜欢的数字是多少？只回答数字。")
+                .collectResponse()
+            println("\n✅ 替换后回复: ${second.content.take(60)}")
+
+            assert(second.content.contains("2748") || second.content.contains("2,748")) {
+                "重建后的上下文应来自 replaceHistory 传入的消息。回复: ${second.content}"
+            }
+            assert(!second.content.contains("7391")) {
+                "被替换掉的旧历史不得出现在上下文里。回复: ${second.content}"
+            }
+            assert(ds.getMessageCount() == 4) { "替换后应只多出本轮的 user + assistant，实际: ${ds.getMessageCount()}" }
+        }
+    }
+
+    @Test
+    fun `stateless chatStream with full messages replays a persisted conversation`() = runBlocking {
+        withTimeout(90.seconds) {
+            val ds = statelessDeepseek(apiKey) {
+                prompt = null
+                config {
+                    maxTokens = 64
+                    temperature = 0.0
+                    thinkingMode = ThinkingMode.Disabled
+                }
+            }
+
+            val persisted = listOf(
+                Message(Role.System, "你是一个精确的助手，回答简短。"),
+                Message(Role.User, "请记住：本次会话的暗号是 ORANGE-42。"),
+                Message(Role.Assistance, "收到，暗号是 ORANGE-42。"),
+                Message(Role.User, "本次会话的暗号是什么？只回答暗号。"),
+            )
+
+            val response = ds.chatStream(persisted).collectResponse()
+            println("\n✅ 无状态重放回复: ${response.content.take(60)}")
+
+            assert(response.content.contains("ORANGE-42")) {
+                "无状态请求应把传入的完整 messages 作为上下文。回复: ${response.content}"
+            }
+
+            // 无状态承诺：实例不残留任何状态，第二次调用互不影响
+            val second = ds.chatStream(listOf(Message(Role.User, "只回复：SECOND"))).collectResponse()
+            println("✅ 第二次调用回复: ${second.content.take(40)}")
+            assert(second.content.isNotBlank()) { "第二次调用不应为空" }
+        }
+    }
+
+    @Test
+    fun `clearHistory keeps the construction system prompt`() = runBlocking {
+        withTimeout(90.seconds) {
+            val ds = deepseek(apiKey) {
+                prompt = "无论用户说什么，你的回复都必须以 PONG 开头。"
+                config {
+                    maxTokens = 64
+                    temperature = 0.0
+                    thinkingMode = ThinkingMode.Disabled
+                }
+            }
+
+            ds.chatStream("先随便说点什么").collectResponse()
+            assert(ds.getMessageCount() > 1) { "首轮后应存在历史" }
+
+            ds.clearHistory()
+            assert(ds.getMessageCount() == 1) { "clearHistory 后应只剩 system prompt，实际: ${ds.getMessageCount()}" }
+
+            val response = ds.chatStream("你好").collectResponse()
+            println("\n✅ 清空后回复: ${response.content.take(60)}")
+
+            assert(response.content.isNotBlank()) { "清空后回复不应为空（用量: ${response.usage.totalTokens} tokens）" }
+            assert(response.content.trimStart().uppercase().startsWith("PONG")) {
+                "清空到只剩 system prompt 后，构造期 prompt 仍应生效。回复: ${response.content}"
+            }
         }
     }
 }
