@@ -149,10 +149,16 @@ internal class DeepseekCore(
 
     /**
      * 执行一轮 tool calls 并把 assistant/tool 消息追加到历史。
+     *
+     * @param reasoningContent 这一轮 assistant 消息的思考内容。官方规定（Thinking Mode 文档）：
+     *   请求带 `tools` 时，历史里**所有轮次**的 `reasoning_content` 都必须完整回传（包括没有发生
+     *   工具调用的轮次），缺任意一轮 API 直接返回 400；请求不带 `tools` 时服务端忽略该字段。
+     *   这里写下的 assistant(`tool_calls`) 属于历史，同样要带上产生它的那一轮思考。
      */
     internal suspend fun handleToolCalls(
         pendingToolCalls: List<ChatChunk.ToolCallRequest>,
         history: MutableList<Message>,
+        reasoningContent: String? = null,
     ): List<ToolExecResult> {
         if (pendingToolCalls.isEmpty()) return emptyList()
         val host = toolHost
@@ -166,6 +172,7 @@ internal class DeepseekCore(
                 role = Role.Assistant,
                 content = null,
                 toolCalls = pendingToolCalls.map { it.call },
+                reasoningContent = reasoningContent,
             )
         )
 
@@ -218,7 +225,11 @@ internal class DeepseekCore(
  * 失败或取消时回滚本轮自己追加的消息（按引用精确删除，见 `ownMessages`），
  * 不会删除其它来源写入同一张历史的、并不属于本轮的消息。
  * [hook] 只收到外层 Flow 可见的事件（含最终累计 Done）。
+ *
+ * `reasoningContent` 是 Beta 字段（[ExperimentalDeepseekApi]），本函数是库内唯一把**流里的**思考内容
+ * 写进历史的位置，因此 opt-in 精确落在这一层。
  */
+@OptIn(ExperimentalDeepseekApi::class)
 internal suspend fun FlowCollector<ChatChunk>.streamLoop(
     core: DeepseekCore,
     history: MutableList<Message>,
@@ -238,6 +249,12 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
         ownMessages += userMessage
     }
     val contentBuilder = StringBuilder()
+    // 思考内容要跟着 assistant 消息一起进历史。规则是**请求级**的（官方 Thinking Mode 文档）：
+    // 请求带 `tools` 时，历史里所有轮次的 reasoning_content 都要完整回传，漏掉任意一轮，后续请求
+    // 就是非法请求（400 "The `reasoning_content` in the thinking mode must be passed back to the
+    // API"）；请求不带 `tools` 时服务端忽略该字段。模型确实没思考的轮次没有内容可回传，字段保持 null。
+    // 空串一律归一成 null：`Message` 序列化时 null 不写字段，空串会写出一个无意义的空字段。
+    val reasoningBuilder = StringBuilder()
     var iterations = 0
 
     var totalPromptTokens = 0L
@@ -269,6 +286,7 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
                 when (chunk) {
                     is ChatChunk.ContentDelta -> {
                         if (chunk.content.isNotEmpty()) contentBuilder.append(chunk.content)
+                        chunk.reasoningContent?.let { reasoningBuilder.append(it) }
                         hook?.onChunk(chunk)
                         emit(chunk)
                     }
@@ -300,13 +318,25 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
             // ★ 检查点 3: 工具调用执行前
             if (session.cancelled) return
             val toolWriteStart = history.size
-            val toolResults = core.handleToolCalls(pendingToolCalls, history)
+            val toolResults = core.handleToolCalls(
+                pendingToolCalls,
+                history,
+                reasoningContent = reasoningBuilder.toString().ifEmpty { null },
+            )
             ownMessages += history.subList(toolWriteStart, history.size)
+            // 思考内容按轮归属：这一轮已经随 assistant(tool_calls) 写进历史，下一轮的思考要重新累积。
+            //
+            // **只有真的写下了那条 assistant(tool_calls) 才清**：`handleToolCalls` 唯一的空返回路径是
+            // 「没有 toolHost 且存在非 web_search 调用」（见其早期的 `return emptyList()`），此时历史里
+            // 什么都没写，这里的思考是这个回合唯一的推理记录。清掉它，这一轮的 reasoning 就凭空消失，
+            // 而带 `tools` 的后续请求要求历史里所有轮次的 reasoning 完整回传——少一轮就是 400。
+            if (toolResults.isNotEmpty()) reasoningBuilder.clear()
             for (tr in toolResults) {
                 val data = ChatChunk.ToolResultData(tr.toolCallId, tr.functionName, tr.content, tr.isError)
                 hook?.onChunk(data)
                 emit(data)
             }
+            // 工具结果一律在历史里配了对，才继续下一轮；否则收尾（保留思考给最终消息）。
             if (toolResults.isEmpty()) break // Tool execution failed → stop
 
             // web_search 由服务端在同一流内完成作答，不再进入下一轮循环
@@ -328,7 +358,11 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
         emit(done)
 
         if (contentBuilder.isNotEmpty()) {
-            val assistantMessage = Message(Role.Assistant, content = MessageContent.of(contentBuilder.toString()))
+            val assistantMessage = Message(
+                role = Role.Assistant,
+                content = MessageContent.of(contentBuilder.toString()),
+                reasoningContent = reasoningBuilder.toString().ifEmpty { null },
+            )
             history.add(assistantMessage)
             ownMessages += assistantMessage
         }

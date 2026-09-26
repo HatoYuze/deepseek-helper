@@ -89,7 +89,12 @@ internal class DeepseekStandardApiImpl(
         val streamOpts = if (config.includeUsage) StreamOpts(includeUsage = true) else null
 
         val request = Request(
-            messages = messages.withoutReasoningContent(),
+            // 思考内容原样发送。官方 Thinking Mode 文档：请求带 `tools` 时，历史里所有轮次的
+            // reasoning_content 都必须完整回传（包括没有发生工具调用的轮次），否则 API 返回 400
+            // （"The `reasoning_content` in the thinking mode must be passed back to the API"）；
+            // 请求不带 `tools` 时服务端忽略该字段（"even if passed to the API, it will be
+            // ignored"）。因此这里既不按 tools 是否存在分流，也绝不能剥离该字段。
+            messages = messages,
             model = model.id,
             maxTokens = config.maxTokens,
             temperature = config.temperature,
@@ -172,20 +177,6 @@ internal class DeepseekStandardApiImpl(
             }
     }
 }
-
-/**
- * 返回剥离思考内容的消息副本。
- *
- * DeepSeek 官方不建议把 `reasoning_content` 回传给下一次请求；
- * 历史中的思考内容仍保留供展示，仅在请求负载中剥离。
- */
-@OptIn(ExperimentalDeepseekApi::class)
-internal fun List<Message>.withoutReasoningContent(): List<Message> =
-    if (none { it.reasoningContent != null }) {
-        this
-    } else {
-        map { it.copy(reasoningContent = null) }
-    }
 
 internal suspend fun checkHttpStatus(response: HttpResponse) {
     when (response.status) {
