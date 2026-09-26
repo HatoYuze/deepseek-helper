@@ -2,15 +2,20 @@
 
 本仓库遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）。发布记录见下，最新版本在前。
 
-## [0.4.1] - 2026-09-26
+## [0.4.1] - 2026-09-27
 
-> 0.4.1 修一个会让**带工具的多轮请求全部失败**的协议错误：0.4.0 在装配请求体时无条件剥离了
-> `reasoning_content`，而 DeepSeek 思考模式的规则是**请求级**的——请求**带 `tools`** 时，历史里
-> **所有轮次**的 `reasoning_content` 都必须完整回传（含没有发生工具调用的轮次），缺任意一轮 API
-> 直接返回 400（`The reasoning_content in the thinking mode must be passed back to the API`）；
-> 请求不带 `tools` 时服务端忽略该字段，因此无需按 `tools` 是否存在分流。
+> 0.4.1 让请求回到 DeepSeek 思考模式的**请求级**规则：请求**带 `tools`** 时，历史里**所有轮次**的
+> `reasoning_content` 都必须完整回传（含没有发生工具调用的轮次，官方文档明示缺失即 400：
+> `The reasoning_content in the thinking mode must be passed back to the API`）；请求不带 `tools` 时
+> 服务端忽略该字段。0.4.0 在装配请求体时无条件剥离了该字段——既违反规则，也把库内历史已经记下的
+> 思考内容丢在了请求之外。
 > API 层面完全向后兼容（`Message.reasoningContent` 本就存在，只是过去不会被发送，现在会），
 > 因此按 patch 发布。
+>
+> 发布前用线上 key 实测（`deepseek-flash` 与 `deepseek-v4-pro`；流式与非流式；`thinking` 显式开启、
+> `reasoning_effort=high`）：**回传后被服务端接受（200）**；而缺失或空串的 `reasoning_content`
+> 当前同样被接受，未复现文档所述的 400。即本版是按官方契约收敛到正确形状、并消除历史信息丢失，
+> 而不是修一个当前必然复现的中断——升级说明请按此口径理解。
 >
 > 行为影响：带 `tools` 的多轮请求会把历史里各轮的思考内容一并发送，并**被服务端拼接进上下文**，
 > 因此 prompt token 会相应上升；这是官方要求的行为，不是本次修复引入的开销。不带 `tools` 时该字段
