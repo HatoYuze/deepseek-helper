@@ -346,7 +346,7 @@ internal fun List<Message>.toResponsesInputItems(): JsonElement {
                     put("content", msg.toResponsesContentBlocks("input_text"))
                 })
 
-                Role.Assistance -> {
+                Role.Assistant -> {
                     if (!msg.reasoningContent.isNullOrEmpty()) {
                         reasoningCounter++
                         add(buildJsonObject {

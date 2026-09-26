@@ -100,7 +100,7 @@ class DeepseekHistoryConcurrencyTest {
             listOf(
                 Message(Role.User, MessageContent.of("first")),
                 Message(Role.User, MessageContent.of("second")),
-                Message(Role.Assistance, MessageContent.of("hi")),
+                Message(Role.Assistant, MessageContent.of("hi")),
                 Message(Role.User, MessageContent.of("third")),
             ),
             ds.messages,
@@ -151,13 +151,13 @@ class DeepseekHistoryConcurrencyTest {
         }
         val ds = statefulDeepseek(backend)
 
-        ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("restored-1")), Message(Role.Assistance, MessageContent.of("restored-2"))))
+        ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("restored-1")), Message(Role.Assistant, MessageContent.of("restored-2"))))
         ds.chatStream("next").collect { }
 
         assertEquals(
             listOf(
                 Message(Role.User, MessageContent.of("restored-1")),
-                Message(Role.Assistance, MessageContent.of("restored-2")),
+                Message(Role.Assistant, MessageContent.of("restored-2")),
                 Message(Role.User, MessageContent.of("next")),
             ),
             seen.single(),

@@ -25,7 +25,7 @@ class TruncateAtTest {
 
     private val system = Message(Role.System, MessageContent.of("sys"))
     private val user = Message(Role.User, MessageContent.of("u"))
-    private val assistant = Message(Role.Assistance, MessageContent.of("a"))
+    private val assistant = Message(Role.Assistant, MessageContent.of("a"))
 
     private fun deepseekWithHistory(): Deepseek =
         statefulDeepseek(GatedBackend(), prompt = "sys").apply {

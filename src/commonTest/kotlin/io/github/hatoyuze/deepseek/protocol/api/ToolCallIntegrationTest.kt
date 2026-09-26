@@ -27,7 +27,7 @@ class ToolCallIntegrationTest {
 
         // assistant message with tool_calls
         val assistant = msgs[0]
-        assertEquals(Role.Assistance, assistant.role)
+        assertEquals(Role.Assistant, assistant.role)
         val toolCalls = assistant.toolCalls!!
         assertEquals(1, toolCalls.size)
         assertEquals("call_1", toolCalls[0].id)

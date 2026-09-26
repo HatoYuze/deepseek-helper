@@ -156,7 +156,7 @@ class ResponsesImageInputTest {
 
     @Test
     fun `images are rejected outside user messages`() {
-        val assistant = Message(Role.Assistance, MessageContent.image("https://example.com/a.jpg"))
+        val assistant = Message(Role.Assistant, MessageContent.image("https://example.com/a.jpg"))
         val failure = assertFailsWith<IllegalArgumentException> { listOf(assistant).requireImagesAllowed() }
         assertTrue(failure.message!!.contains("user"), "异常消息应说明限制：${failure.message}")
 
@@ -174,9 +174,9 @@ class ResponsesImageInputTest {
         listOf(
             Message(Role.System, MessageContent.of("s")),
             Message(Role.User, MessageContent.of("u")),
-            Message(Role.Assistance, MessageContent.of("a")),
+            Message(Role.Assistant, MessageContent.of("a")),
             Message(Role.Tool, MessageContent.of("t")),
-            Message(Role.Assistance, null),
+            Message(Role.Assistant, null),
         ).requireImagesAllowed()
     }
 
@@ -190,7 +190,7 @@ class ResponsesImageInputTest {
 
     @Test
     fun `toResponsesInputItems enforces the role restriction`() {
-        val messages = listOf(Message(Role.Assistance, MessageContent.imageFile("file-api-1")))
+        val messages = listOf(Message(Role.Assistant, MessageContent.imageFile("file-api-1")))
         assertFailsWith<IllegalArgumentException> { messages.toResponsesInputItems() }
     }
 

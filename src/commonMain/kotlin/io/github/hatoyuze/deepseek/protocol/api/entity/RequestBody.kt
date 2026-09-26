@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
 public enum class Role {
     @SerialName("system") System,
     @SerialName("user") User,
-    @SerialName("assistant") Assistance,
+    @SerialName("assistant") Assistant,
     @SerialName("tool") Tool,
 }
 
@@ -27,7 +27,7 @@ public enum class Role {
  * |------------|---------|------------|-----------|------------------|
  * | System     | ✅ 纯文本 | —          | —         | —                |
  * | User       | ✅ 纯文本或内容块（可携带图片） | — | — | —                |
- * | Assistance | null (有 tool_calls 时) / ✅ 纯文本 (纯文本时) | — | ✅ | ✅ (Beta) |
+ * | Assistant | null (有 tool_calls 时) / ✅ 纯文本 (纯文本时) | — | ✅ | ✅ (Beta) |
  * | Tool       | ✅ 纯文本 | ✅         | —         | —                |
  *
  * - [content] 为 `null` 表示没有内容（assistant 携带 `tool_calls` 时即如此）；
@@ -36,7 +36,7 @@ public enum class Role {
  *   官方规定 system / assistant 消息携带图片会被服务端以 `400` 拒绝，库在请求装配前
  *   会先抛出 [IllegalArgumentException]（fail-fast）
  * - [toolCallId] 仅在 role 为 [Role.Tool] 时有效
- * - [toolCalls] 仅在 role 为 [Role.Assistance] 且模型请求工具调用时有效
+ * - [toolCalls] 仅在 role 为 [Role.Assistant] 且模型请求工具调用时有效
  * - [reasoningContent] 为 Beta 特性，需要启用 [io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi]
  *
  * ```kotlin

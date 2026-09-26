@@ -88,8 +88,8 @@ internal class DeepseekCore(
     /** 当前使用的模型；未显式指定时固定使用库内硬编码的 [Model.Flash]，不会发起网络请求 */
     val resolvedModel: Model get() = model ?: Model.Flash
 
-    /** FIM 补全使用的模型，默认 [Model.Pro] */
-    var modelForFim: Model = Model.Pro
+    /** FIM 补全使用的模型，默认 [Model.Flash]（`deepseek-v4-pro` 已退役） */
+    var modelForFim: Model = Model.Flash
 
     /**
      * 取消当前实例上的活跃流。
@@ -163,7 +163,7 @@ internal class DeepseekCore(
 
         history.add(
             Message(
-                role = Role.Assistance,
+                role = Role.Assistant,
                 content = null,
                 toolCalls = pendingToolCalls.map { it.call },
             )
@@ -328,7 +328,7 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
         emit(done)
 
         if (contentBuilder.isNotEmpty()) {
-            val assistantMessage = Message(Role.Assistance, content = MessageContent.of(contentBuilder.toString()))
+            val assistantMessage = Message(Role.Assistant, content = MessageContent.of(contentBuilder.toString()))
             history.add(assistantMessage)
             ownMessages += assistantMessage
         }

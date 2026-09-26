@@ -14,7 +14,7 @@ class ReasoningStripTest {
 
     @Test
     fun `withoutReasoningContent strips reasoning but keeps content`() {
-        val original = Message(Role.Assistance, MessageContent.of("hi"), reasoningContent = "thinking...")
+        val original = Message(Role.Assistant, MessageContent.of("hi"), reasoningContent = "thinking...")
 
         val stripped = listOf(original).withoutReasoningContent()
 
@@ -25,7 +25,7 @@ class ReasoningStripTest {
 
     @Test
     fun `withoutReasoningContent keeps other tool call fields`() {
-        val original = Message(Role.Assistance, null, toolCalls = emptyList())
+        val original = Message(Role.Assistant, null, toolCalls = emptyList())
         val stripped = listOf(original).withoutReasoningContent()
         assertEquals(emptyList(), stripped[0].toolCalls)
     }
@@ -34,7 +34,7 @@ class ReasoningStripTest {
     fun `withoutReasoningContent returns the same list when nothing to strip`() {
         val messages = listOf(
             Message(Role.User, MessageContent.of("hello")),
-            Message(Role.Assistance, MessageContent.of("hi")),
+            Message(Role.Assistant, MessageContent.of("hi")),
         )
 
         val stripped = messages.withoutReasoningContent()

@@ -43,7 +43,7 @@ class StatelessDeepseekMessagesTest {
         val ds = stateless(seen)
         val messages = listOf(
             Message(Role.User, MessageContent.of("u1")),
-            Message(Role.Assistance, MessageContent.of("a1")),
+            Message(Role.Assistant, MessageContent.of("a1")),
             Message(Role.User, MessageContent.of("u2")),
         )
 
@@ -71,7 +71,7 @@ class StatelessDeepseekMessagesTest {
         val first = listOf(Message(Role.User, MessageContent.of("first")))
         val second = listOf(
             Message(Role.User, MessageContent.of("second-1")),
-            Message(Role.Assistance, MessageContent.of("second-2")),
+            Message(Role.Assistant, MessageContent.of("second-2")),
             Message(Role.User, MessageContent.of("second-3")),
         )
 
@@ -149,7 +149,7 @@ class StatelessDeepseekMessagesTest {
         assertEquals(2, seen.size, "工具调用应触发第二轮请求")
         val second = seen[1]
         assertEquals(listOf(system, Message(Role.User, MessageContent.of("u1"))), second.take(2))
-        assertEquals(Role.Assistance, second[2].role)
+        assertEquals(Role.Assistant, second[2].role)
         assertNotNull(second[2].toolCalls, "第二轮请求应带上 assistant 的 tool_calls")
         assertEquals(Role.Tool, second[3].role)
 

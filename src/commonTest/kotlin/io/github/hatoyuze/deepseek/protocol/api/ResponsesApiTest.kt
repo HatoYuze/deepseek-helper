@@ -37,7 +37,7 @@ class ResponsesApiTest {
     fun `toResponsesInputItems maps user and assistant text plus reasoning`() {
         val messages = listOf(
             Message(Role.User, MessageContent.of("hello")),
-            Message(Role.Assistance, MessageContent.of("hi there"), reasoningContent = "thinking..."),
+            Message(Role.Assistant, MessageContent.of("hi there"), reasoningContent = "thinking..."),
         )
 
         val items = messages.toResponsesInputItems().jsonArray
@@ -69,7 +69,7 @@ class ResponsesApiTest {
     fun `toResponsesInputItems maps function and web search tool calls`() {
         val messages = listOf(
             Message(
-                role = Role.Assistance,
+                role = Role.Assistant,
                 content = null,
                 toolCalls = listOf(
                     ToolCall("call_1", "get_weather", """{"city":"Hangzhou"}"""),

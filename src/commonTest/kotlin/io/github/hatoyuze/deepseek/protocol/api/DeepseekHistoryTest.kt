@@ -18,7 +18,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 class DeepseekHistoryTest {
 
     private val user1 = Message(Role.User, MessageContent.of("u1"))
-    private val assistant1 = Message(Role.Assistance, MessageContent.of("a1"))
+    private val assistant1 = Message(Role.Assistant, MessageContent.of("a1"))
     private val user2 = Message(Role.User, MessageContent.of("u2"))
     private val system = Message(Role.System, MessageContent.of("sys"))
 

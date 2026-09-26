@@ -35,10 +35,35 @@ class MessageSerializationTest {
         assertEquals("Hello", obj["content"]!!.jsonPrimitive.content)
     }
 
+    /**
+     * `Role.Assistant` 的 wire 值必须仍然恰好是 `"assistant"`。
+     *
+     * 这条断言把「枚举常量改名」与「协议值」解耦：常量曾误拼为 `Assistance`，
+     * 改名只应影响 Kotlin API，绝不能改动发给服务端的 role 字符串。
+     */
+    @Test
+    fun `assistant role keeps its wire value after the rename`() {
+        val objective = json.encodeToString(serializer<Role>(), Role.Assistant)
+        assertEquals("\"assistant\"", objective)
+
+        val message = Message(role = Role.Assistant, content = MessageContent.of("hi"))
+        val obj = json.parseToJsonElement(json.encodeToString(serializer<Message>(), message)).jsonObject
+        assertEquals("assistant", obj["role"]!!.jsonPrimitive.content)
+
+        // 反序列化同样按 "assistant" 回落到 Role.Assistant
+        val restored = json.decodeFromString(serializer<Message>(), """{"role":"assistant","content":"hi"}""")
+        assertEquals(Role.Assistant, restored.role)
+
+        // 其余三个角色一并锚定，防止将来再引入同类拼写漂移
+        assertEquals("\"system\"", json.encodeToString(serializer<Role>(), Role.System))
+        assertEquals("\"user\"", json.encodeToString(serializer<Role>(), Role.User))
+        assertEquals("\"tool\"", json.encodeToString(serializer<Role>(), Role.Tool))
+    }
+
     @Test
     fun `assistant message with tool calls`() {
         val msg = Message(
-            role = Role.Assistance,
+            role = Role.Assistant,
             content = null,
             toolCalls = listOf(
                 ToolCall("call_001", "get_weather", """{"location":"Hangzhou"}"""),
@@ -66,7 +91,7 @@ class MessageSerializationTest {
         val messages = listOf(
             Message(role = Role.System, content =MessageContent.of("sys")),
             Message(role = Role.User, content =MessageContent.of("hi")),
-            Message(role = Role.Assistance, content =MessageContent.of("hello")),
+            Message(role = Role.Assistant, content =MessageContent.of("hello")),
         )
         val listSerializer = ListSerializer(serializer<Message>())
         val str = json.encodeToString(listSerializer, messages)
@@ -74,13 +99,13 @@ class MessageSerializationTest {
         assertEquals(3, restored.size)
         assertEquals(Role.System, restored[0].role)
         assertEquals(Role.User, restored[1].role)
-        assertEquals(Role.Assistance, restored[2].role)
+        assertEquals(Role.Assistant, restored[2].role)
     }
 
     @Test
     fun `assistant with tool calls round-trip`() {
         val msg = Message(
-            role = Role.Assistance,
+            role = Role.Assistant,
             content = null,
             toolCalls = listOf(
                 ToolCall("call_001", "get_weather", """{"location":"HZ"}"""),

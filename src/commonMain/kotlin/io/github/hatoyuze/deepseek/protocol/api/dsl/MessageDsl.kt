@@ -18,7 +18,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.openFileSource
  *     val image = imageOf("photos/cat.jpg")      // 本地文件：库内读成 base64 data URL
  *     Role.User says image + "这张图片里有什么？"
  *
- *     Role.Assistance says "这是一只橘猫，正躺在窗台上。"
+ *     Role.Assistant says "这是一只橘猫，正躺在窗台上。"
  * }
  * ds.replaceHistory(messages)   // 或 statelessDeepseek 的 chatStream(messages)
  * ```

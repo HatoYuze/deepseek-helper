@@ -8,7 +8,7 @@ package io.github.hatoyuze.deepseek.protocol.api
  * ```kotlin
  * @OptIn(ExperimentalDeepseekApi::class)
  * val msg = Message(
- *     role = Role.Assistance,
+ *     role = Role.Assistant,
  *     content = null,
  *     reasoningContent = "...", // Beta 字段
  * )

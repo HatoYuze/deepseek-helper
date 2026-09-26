@@ -88,7 +88,7 @@ class DeepseekHistoryStressTest {
         ds.chatStream("final").collect { }
 
         assertEquals(
-            listOf(Message(Role.User, MessageContent.of("restored")), Message(Role.User, MessageContent.of("final")), Message(Role.Assistance, MessageContent.of("ok"))),
+            listOf(Message(Role.User, MessageContent.of("restored")), Message(Role.User, MessageContent.of("final")), Message(Role.Assistant, MessageContent.of("ok"))),
             ds.messages,
             "替换风暴后实例应继续正常工作",
         )
@@ -149,7 +149,7 @@ class DeepseekHistoryStressTest {
         repeat(1_000) { i ->
             when (i % 4) {
                 0 -> ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("u$i"))))
-                1 -> ds.addMessage(Message(Role.Assistance, MessageContent.of("a$i")))
+                1 -> ds.addMessage(Message(Role.Assistant, MessageContent.of("a$i")))
                 2 -> ds.clearHistory()
                 else -> ds.replaceHistory(emptyList())
             }

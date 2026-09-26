@@ -138,7 +138,7 @@ class ImageChatStreamTest {
         )
         val history = listOf(
             Message(Role.User, MessageContent.of("first")),
-            Message(Role.Assistance, MessageContent.of("ok")),
+            Message(Role.Assistant, MessageContent.of("ok")),
             Message(
                 Role.User,
                 MessageContent.Parts(
@@ -178,7 +178,7 @@ class ImageChatStreamTest {
         val ds = StatelessDeepseek("sk-test", sharingPool = pool)
         val bad = listOf(
             Message(Role.User, MessageContent.of("fine")),
-            Message(Role.Assistance, MessageContent.imageFile("file-api-1")),
+            Message(Role.Assistant, MessageContent.imageFile("file-api-1")),
         )
 
         assertFailsWith<IllegalArgumentException> { ds.chatStream(bad).toList() }
@@ -197,7 +197,7 @@ class ImageChatStreamTest {
                         listOf(MessageContent.textPart("看图"), MessageContent.imageFile("file-api-1").parts.single()),
                     ),
                 ),
-                Message(Role.Assistance, MessageContent.of("好的")),
+                Message(Role.Assistant, MessageContent.of("好的")),
             ),
         )
 

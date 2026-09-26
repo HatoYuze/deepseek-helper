@@ -286,7 +286,7 @@ class MessageContentSerializationTest {
 
     @Test
     fun `message content null keeps the field absent`() {
-        val message = Message(Role.Assistance, null)
+        val message = Message(Role.Assistant, null)
         // 库的 Json 配置（DeepseekJson）为 explicitNulls = false：content 为 null 时该字段不写出
         val obj = json.parseToJsonElement(DeepseekJson.encodeToString(Message.serializer(), message)).jsonObject
         assertFalse(obj.containsKey("content"), "content=null 时不应写出该字段：$obj")
@@ -296,7 +296,7 @@ class MessageContentSerializationTest {
     fun `null content is still decodable`() {
         // 省略 null 字段只影响编码：历史上可能有 `content: null` 的记录，解码必须照常
         val decoded = DeepseekJson.decodeFromString(Message.serializer(), """{"role":"assistant","content":null}""")
-        assertEquals(Role.Assistance, decoded.role)
+        assertEquals(Role.Assistant, decoded.role)
         assertNull(decoded.content)
     }
 

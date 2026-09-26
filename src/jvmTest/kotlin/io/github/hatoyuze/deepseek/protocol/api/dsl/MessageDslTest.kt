@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
  * Role.System says "You are a helpful assistant"
  * val image = imageOf("cat.jpg")
  * Role.User says image + "What is its content"
- * Role.Assistance says "This image describes ..."
+ * Role.Assistant says "This image describes ..."
  * ```
  */
 class MessageDslTest {
@@ -43,11 +43,11 @@ class MessageDslTest {
         val messages = buildDeepseekMessages {
             Role.System says "You are a helpful assistant"
             Role.User says image + "What is its content"
-            Role.Assistance says "This image describes a scene that ..."
+            Role.Assistant says "This image describes a scene that ..."
         }
 
         assertEquals(3, messages.size)
-        assertEquals(listOf(Role.System, Role.User, Role.Assistance), messages.map { it.role })
+        assertEquals(listOf(Role.System, Role.User, Role.Assistant), messages.map { it.role })
         assertEquals("You are a helpful assistant", messages[0].content?.asText())
         assertEquals("This image describes a scene that ...", messages[2].content?.asText())
 
