@@ -71,6 +71,10 @@ internal class DeepseekStandardApiImpl(
             @SerialName("top_logprobs") val topLogprobs: Int? = null,
         )
 
+        // 官方限制：图片只能出现在 user 消息里；在装配请求体/发起请求前 fail-fast
+        // （而不是把一次注定 400 的往返留给调用方）
+        messages.requireCompletionsInputAllowed()
+
         // thinking 仅在非默认状态时发送
         val thinking = when (val mode = config.thinkingMode) {
             null, is ThinkingMode.Enabled -> null

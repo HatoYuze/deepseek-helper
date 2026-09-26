@@ -7,17 +7,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 @OptIn(ExperimentalDeepseekApi::class)
 class ReasoningStripTest {
 
     @Test
     fun `withoutReasoningContent strips reasoning but keeps content`() {
-        val original = Message(Role.Assistance, "hi", reasoningContent = "thinking...")
+        val original = Message(Role.Assistance, MessageContent.of("hi"), reasoningContent = "thinking...")
 
         val stripped = listOf(original).withoutReasoningContent()
 
-        assertEquals("hi", stripped[0].content)
+        assertEquals("hi", stripped[0].content?.asText())
         assertNull(stripped[0].reasoningContent)
         assertEquals("thinking...", original.reasoningContent, "原历史中的思考内容应保留")
     }
@@ -32,8 +33,8 @@ class ReasoningStripTest {
     @Test
     fun `withoutReasoningContent returns the same list when nothing to strip`() {
         val messages = listOf(
-            Message(Role.User, "hello"),
-            Message(Role.Assistance, "hi"),
+            Message(Role.User, MessageContent.of("hello")),
+            Message(Role.Assistance, MessageContent.of("hi")),
         )
 
         val stripped = messages.withoutReasoningContent()

@@ -12,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 /**
  * [Deepseek.truncateAt] 语义固化测试（弃用前的行为契约 + fail-fast）。
@@ -22,9 +23,9 @@ import kotlin.test.assertTrue
 @Suppress("DEPRECATION")
 class TruncateAtTest {
 
-    private val system = Message(Role.System, "sys")
-    private val user = Message(Role.User, "u")
-    private val assistant = Message(Role.Assistance, "a")
+    private val system = Message(Role.System, MessageContent.of("sys"))
+    private val user = Message(Role.User, MessageContent.of("u"))
+    private val assistant = Message(Role.Assistance, MessageContent.of("a"))
 
     private fun deepseekWithHistory(): Deepseek =
         statefulDeepseek(GatedBackend(), prompt = "sys").apply {

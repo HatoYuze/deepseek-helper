@@ -14,7 +14,7 @@
 ```kotlin
 // build.gradle.kts (commonMain)
 dependencies {
-    implementation("io.github.hatoyuze:deepseek-helper:0.3.0")
+    implementation("io.github.hatoyuze:deepseek-helper:0.4.0")
 }
 ```
 
@@ -201,6 +201,156 @@ val response = ds.fimStream(
 println(response.text)
 println("消耗 ${response.usage.totalTokens} tokens")
 ```
+
+#### 消息构建 DSL（推荐用于带图的对话）
+
+内容块类型直接手写比较啰嗦，因此提供了 `buildDeepseekMessages` DSL：用 `Role.X says ...`
+声明每条消息，用 `+` 组合图片与文本。
+
+```kotlin
+val image = imageOf("photos/cat.jpg")   // 本地文件：库内读成 base64，MIME 按魔数判定
+
+val messages = buildDeepseekMessages {
+    Role.System says "You are a helpful assistant"
+
+    Role.User says image + "What is its content"
+
+    Role.Assistance says "This image describes a scene that ..."
+}   // 返回 List<Message>，可直接交给 replaceHistory / chatStream
+
+ds.chatStream(messages[1].content!!).collectResponse()
+```
+
+`imageOf(...)` 接受多种来源，判定顺序固定且可预测：
+
+| 传入 | 行为 |
+|---|---|
+| `ByteArray` | 内联为 base64 data URL，MIME 由**魔数**判定（JPEG / PNG / GIF / WebP） |
+| `FileSource`（`Bytes` / `Path`） | 读取后内联；库**不**关闭它（需要时自己 `use {}`） |
+| `"https://…"` / `"data:…"` | 原样作为外链或已编码的 data URL |
+| 其他 `String` | 当作**本地文件路径**读取后内联 |
+| JVM / Android 扩展 | `File`、`java.net.URI`（支持 `file:`）、`InputStream` |
+
+按 `file_id` 引用已上传的图片时用 `imageFileOf(...)`（字符串在 `imageOf` 里表示 URL / 路径，
+`file-api-…` 两者都不是，因此单独给了入口）：
+
+```kotlin
+val uploaded = ds.files().upload("photos/cat.jpg", "image/jpeg")
+
+val messages = buildDeepseekMessages {
+    Role.User says imageFileOf(uploaded.id) + "这张图里有什么？"
+}
+```
+
+`+` 的组合规则（两侧都是「内容」，顺序即拼接顺序）：
+
+```kotlin
+imageOf(bytes) + "描述一下"                    // 图 + 文
+imageOf(a) + imageOf(b)                       // 两张图
+imageOf(a) + imageOf(b) + "对比这两张图"        // 连续拼接
+MessageContent.textPart("先看图：") + imageOf(a) // 文本块在前的写法
+```
+
+> `"文本" + imageOf(...)` 这种「字符串在左」的写法**不会**命中本库的运算符 ——
+> Kotlin 会优先解析到 stdlib 的 `String.plus(Any?)` 并得到一个字符串。文本在前的写法请用
+> `MessageContent.textPart("文本") + imageOf(...)`。
+>
+> DSL 是同步的：`imageOf` 读本地文件发生在调用方线程，大图或 UI 线程上请自行
+> `withContext(Dispatchers.IO)`。读取失败抛 `FileSourceReadException`；
+> 不支持的来源 / 空白地址 / 超限字节抛 `IllegalArgumentException`（不静默失败）。
+
+#### 图像输入（Vision）
+
+`deepseek-flash` 支持在对话里输入图片：`Message.content` 除了纯文本，还可以是**内容块数组**
+（`MessageContent` / `ContentPart`）。三种官方传图方式都已支持。
+
+```kotlin
+// ① base64 内联：本地图片最简单的方式（单图 ≤ 32 MiB，计入 48 MiB 请求体上限）
+val jpegBytes: ByteArray = readLocalFile("cat.jpg")
+
+val response = ds.chatStream(
+    MessageContent.of(
+        MessageContent.textPart("这张图片里有什么？"),
+        MessageContent.imageDataUrl("image/jpeg", jpegBytes), // 库内直接编码 base64
+    ),
+).collectResponse()
+
+// ② 外部图片 URL：模型自行下载（URL ≤ 8192 字符，图片 ≤ 32 MiB，需 60 秒内可下载完）
+ds.chatStream(MessageContent.image("https://example.com/cat.jpg")).collectResponse()
+
+// ③ Files API：上传一次，多请求复用（单图 ≤ 64 MiB，推荐）
+val uploaded = ds.files().upload("cat.jpg", "image/jpeg")
+ds.chatStream(MessageContent.imageFile(uploaded.id)).collectResponse()
+```
+
+只想传内容块、不想自己包一层 `MessageContent` 时，可以直接用列表重载：
+
+```kotlin
+ds.chatStream(
+    listOf(
+        MessageContent.textPart("描述一下这张图"),
+        ContentPart.ImagePart(imageUrl = "https://example.com/cat.jpg", detail = ImageUrlDetail.Low),
+    ),
+).collectResponse()
+```
+
+细节级别（`ImageUrlDetail`）：`Low` 会先缩放到 512×512（更快、更省 token），
+`High` / `Original` / `Auto` 保留原图（默认 `Auto`，当前等价于 `Original`）。
+
+> 图片**只能出现在 `user` 消息**中：把图片塞进 system / assistant 消息会在发起请求前直接抛
+> `IllegalArgumentException`，而不是等一个 400。
+>
+> 读取历史里的文本请用 `message.content?.asText()`（内容块消息可能没有文本块）。
+> `Message(Role.User, "hi")` 这类字符串字面量写法仍然可用。
+
+#### Files API（上传图片并复用）
+
+```kotlin
+val files = ds.files()
+
+// 上传：mimeType 仅作 multipart 提示，服务端按文件内容判定真实格式
+val uploaded = files.upload("photos/cat.jpg", "image/jpeg")
+
+// 带有效期（1 小时到 30 天）；不传则永久有效
+val temporary = files.upload(
+    FileSource.Bytes(jpegBytes),
+    mimeType = "image/jpeg",
+    filename = "cat.jpg",
+    options = UploadOptions(expiresAfterSeconds = 3600),
+)
+
+println(uploaded.id)        // file-api-xxxxxxxxxxxxxxxx
+println(uploaded.expiresAt) // 只有设了有效期才有值
+
+// 复用：一次上传，多轮请求都能引用
+ds.chatStream(MessageContent.imageFile(uploaded.id)).collectResponse()
+
+// 游标分页列出本人文件
+var page = files.list(limit = 100)
+while (page.hasMore) {
+    page.data.forEach { println("${it.filename} ${it.bytes}B") }
+    page = files.list(after = page.lastId, limit = 100)
+}
+
+// 查询与删除
+val same = files.retrieve(uploaded.id)
+files.delete(uploaded.id)
+```
+
+需要自己管理资源时，`FileSource` 实现了 `AutoCloseable`：
+
+```kotlin
+openFileSource("photos/cat.jpg").use { source ->
+    ds.files().upload(source, mimeType = "image/jpeg")
+}
+```
+
+> 路径来源（`FileSource.Path`）在 JVM / Android 上直接读取文件，读取失败抛
+> `FileSourceReadException`；**Native / JS / Wasm 不支持路径来源**（Kotlin/Native 的
+> metadata 检查拒绝平台数值类型），请先自行读出字节再用 `FileSource.Bytes`。
+>
+> 官方限制：单文件 ≤ 64 MiB、文件名 ≤ 512 字符、单用户 25 GiB / 10000 个文件；
+> 单请求图片 ≤ 600 张。库侧只校验本地能判定的部分（有效期区间、分页 `limit`、必填标识）。
 
 ### 一些特性
 

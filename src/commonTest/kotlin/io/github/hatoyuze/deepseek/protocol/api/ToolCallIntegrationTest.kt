@@ -38,7 +38,7 @@ class ToolCallIntegrationTest {
         val tool = msgs[1]
         assertEquals(Role.Tool, tool.role)
         assertEquals("call_1", tool.toolCallId)
-        assertTrue(tool.content!!.contains("Hangzhou"), "Tool result should contain city name")
+        assertTrue(tool.content!!.asText()!!.contains("Hangzhou"), "Tool result should contain city name")
     }
 
     @Test

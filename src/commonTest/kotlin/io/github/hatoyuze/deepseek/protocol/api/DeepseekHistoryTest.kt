@@ -5,6 +5,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 /**
  * [Deepseek] 历史整体替换/清空语义的固化测试（无网络：Fake 后端注入）。
@@ -16,10 +17,10 @@ import kotlin.test.assertTrue
  */
 class DeepseekHistoryTest {
 
-    private val user1 = Message(Role.User, "u1")
-    private val assistant1 = Message(Role.Assistance, "a1")
-    private val user2 = Message(Role.User, "u2")
-    private val system = Message(Role.System, "sys")
+    private val user1 = Message(Role.User, MessageContent.of("u1"))
+    private val assistant1 = Message(Role.Assistance, MessageContent.of("a1"))
+    private val user2 = Message(Role.User, MessageContent.of("u2"))
+    private val system = Message(Role.System, MessageContent.of("sys"))
 
     @Test
     fun `replaceHistory installs the given list exactly when no prompt`() {
@@ -76,7 +77,7 @@ class DeepseekHistoryTest {
         assertEquals(1, ds.getMessageCount())
         assertEquals(listOf(user1), ds.messages)
 
-        val grown = (1..5).map { Message(Role.User, "u$it") }
+        val grown = (1..5).map { Message(Role.User, MessageContent.of("u$it")) }
         ds.replaceHistory(grown)
         assertEquals(5, ds.getMessageCount())
         assertEquals(ds.getMessageCount(), ds.messages.size)
@@ -117,11 +118,11 @@ class DeepseekHistoryTest {
         assertEquals(listOf(user1, assistant1), ds.messages, "替换后修改源列表不应影响实例")
 
         val snapshot = ds.messages
-        ds.addMessage(Message(Role.User, "later"))
-        ds.replaceHistory(listOf(Message(Role.System, "other")))
+        ds.addMessage(Message(Role.User, MessageContent.of("later")))
+        ds.replaceHistory(listOf(Message(Role.System, MessageContent.of("other"))))
 
         assertEquals(listOf(user1, assistant1), snapshot, "messages 返回快照，不应随实例变化")
-        assertEquals(listOf(Message(Role.System, "other")), ds.messages)
+        assertEquals(listOf(Message(Role.System, MessageContent.of("other"))), ds.messages)
     }
 
     @Test
@@ -140,10 +141,10 @@ class DeepseekHistoryTest {
         // 锁住 internal 测试构造器：历史必须按注入的 core 重建，而不是默认 core
         val ds = statefulDeepseek(GatedBackend(), prompt = "injected")
 
-        assertEquals(listOf(Message(Role.System, "injected")), ds.messages)
+        assertEquals(listOf(Message(Role.System, MessageContent.of("injected"))), ds.messages)
 
         ds.clearHistory()
 
-        assertEquals(listOf(Message(Role.System, "injected")), ds.messages)
+        assertEquals(listOf(Message(Role.System, MessageContent.of("injected"))), ds.messages)
     }
 }

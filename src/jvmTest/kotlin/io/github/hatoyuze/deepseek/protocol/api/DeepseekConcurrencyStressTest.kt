@@ -20,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 /**
  * JVM 重压测试：真实并行调度下验证 (Stateless)Deepseek 的并发与取消语义。
@@ -32,7 +33,7 @@ class DeepseekConcurrencyStressTest {
         val backend = GatedBackend { messages ->
             seen.add(messages)
             flow {
-                emit(ChatChunk.ContentDelta("reply-${messages.last().content}"))
+                emit(ChatChunk.ContentDelta("reply-${messages.last().content?.asText()}"))
                 emit(ChatChunk.Done(1, 1, 1))
             }
         }
@@ -46,13 +47,13 @@ class DeepseekConcurrencyStressTest {
         }.awaitAll()
 
         assertEquals(500, seen.size, "每次 chatStream 应恰好触发一次后端调用")
-        val byContent = seen.groupBy { it.last().content }
+        val byContent = seen.groupBy { it.last().content?.asText() }
         for (i in 1..500) {
             val messages = byContent["user-$i"]
             assertNotNull(messages, "user-$i 的 history 应存在")
             assertEquals(1, messages.size, "user-$i 不应被重复或丢失")
-            assertEquals(Message(Role.System, "sys"), messages[0][0])
-            assertEquals(Message(Role.User, "user-$i"), messages[0][1])
+            assertEquals(Message(Role.System, MessageContent.of("sys")), messages[0][0])
+            assertEquals(Message(Role.User, MessageContent.of("user-$i")), messages[0][1])
         }
         results.forEachIndexed { i, chunks ->
             assertTrue(

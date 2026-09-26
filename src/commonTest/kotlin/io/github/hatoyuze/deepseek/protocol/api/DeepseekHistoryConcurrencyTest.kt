@@ -12,6 +12,7 @@ import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 /**
  * 历史替换/清空与活跃流并发时的契约测试（D1/D2）。
@@ -21,7 +22,7 @@ import kotlin.test.assertTrue
  */
 class DeepseekHistoryConcurrencyTest {
 
-    private val system = Message(Role.System, "sys")
+    private val system = Message(Role.System, MessageContent.of("sys"))
 
     private fun neverEndingBackend(started: CompletableDeferred<Unit>) = GatedBackend {
         flow {
@@ -38,7 +39,7 @@ class DeepseekHistoryConcurrencyTest {
         withTimeout(5_000) { started.await() }
 
         // 替换后的历史比流开始时的 historyStart(=1) 长：若回滚作用于新表，这里会被截回 1 条
-        val replacement = (1..5).map { Message(Role.User, "u$it") }
+        val replacement = (1..5).map { Message(Role.User, MessageContent.of("u$it")) }
         ds.replaceHistory(replacement)
         withTimeout(5_000) { job.join() }
 
@@ -88,19 +89,19 @@ class DeepseekHistoryConcurrencyTest {
             flowOf(ChatChunk.ContentDelta("hi"), ChatChunk.Done(1, 1, 2))
         }
         val ds = statefulDeepseek(backend)
-        ds.addMessage(Message(Role.User, "first"))
+        ds.addMessage(Message(Role.User, MessageContent.of("first")))
 
         val snapshot = ds.messages
         ds.chatStream("second").collect { }
-        ds.addMessage(Message(Role.User, "third"))
+        ds.addMessage(Message(Role.User, MessageContent.of("third")))
 
-        assertEquals(listOf(Message(Role.User, "first")), snapshot, "快照不应随实例变化")
+        assertEquals(listOf(Message(Role.User, MessageContent.of("first"))), snapshot, "快照不应随实例变化")
         assertEquals(
             listOf(
-                Message(Role.User, "first"),
-                Message(Role.User, "second"),
-                Message(Role.Assistance, "hi"),
-                Message(Role.User, "third"),
+                Message(Role.User, MessageContent.of("first")),
+                Message(Role.User, MessageContent.of("second")),
+                Message(Role.Assistance, MessageContent.of("hi")),
+                Message(Role.User, MessageContent.of("third")),
             ),
             ds.messages,
         )
@@ -130,7 +131,7 @@ class DeepseekHistoryConcurrencyTest {
         withTimeout(5_000) { first.join() }
 
         assertEquals(
-            listOf(system, Message(Role.User, "B")),
+            listOf(system, Message(Role.User, MessageContent.of("B"))),
             ds.messages,
             "第一轮的回滚不得删除第二轮写入的 user 消息",
         )
@@ -150,14 +151,14 @@ class DeepseekHistoryConcurrencyTest {
         }
         val ds = statefulDeepseek(backend)
 
-        ds.replaceHistory(listOf(Message(Role.User, "restored-1"), Message(Role.Assistance, "restored-2")))
+        ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("restored-1")), Message(Role.Assistance, MessageContent.of("restored-2"))))
         ds.chatStream("next").collect { }
 
         assertEquals(
             listOf(
-                Message(Role.User, "restored-1"),
-                Message(Role.Assistance, "restored-2"),
-                Message(Role.User, "next"),
+                Message(Role.User, MessageContent.of("restored-1")),
+                Message(Role.Assistance, MessageContent.of("restored-2")),
+                Message(Role.User, MessageContent.of("next")),
             ),
             seen.single(),
             "替换后的历史应作为下一次请求的上下文",

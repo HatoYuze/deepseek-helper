@@ -1,6 +1,8 @@
 package io.github.hatoyuze.deepseek.protocol.api
 
+import io.github.hatoyuze.deepseek.protocol.api.entity.ContentPart
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekApiBackend
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
 import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
@@ -9,6 +11,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.UserBalance
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
 import io.github.hatoyuze.deepseek.toolcall.pipeline.ToolCallHost
 import kotlinx.coroutines.flow.Flow
+import kotlin.jvm.JvmName
 
 /**
  * 不保存聊天历史的 [ChatClient] 实现。
@@ -119,11 +122,53 @@ public class StatelessDeepseek(
      * @return 流式响应的 [Flow]
      */
     public override fun chatStream(userContent: String, hook: SseHook?): Flow<ChatChunk> =
+        streamContentFlow(MessageContent.of(userContent), hook)
+
+    /**
+     * 发起一次性携带内容块（可含图片）的流式对话。
+     *
+     * 与 [chatStream]`(userContent: String)` 的唯一区别是输入形态；每次调用仍然新建局部缓冲，
+     * 结束后即丢弃（实例不留状态）：
+     *
+     * ```kotlin
+     * ds.chatStream(
+     *     MessageContent.of(
+     *         MessageContent.textPart("描述一下这张图"),
+     *         MessageContent.imageDataUrl("image/png", pngBytes),
+     *     ),
+     * ).collect { ... }
+     * ```
+     *
+     * @param content 本条 user 消息的内容（纯文本或内容块数组）
+     * @param hook 可选的实时回调，与 Flow 事件一致
+     * @return 流式响应的 [Flow]
+     */
+    public override fun chatStream(content: MessageContent, hook: SseHook?): Flow<ChatChunk> =
+        streamContentFlow(content, hook)
+
+    /**
+     * 发起一次性携带内容块（可含图片）的流式对话的便捷重载。
+     *
+     * 等价于 `chatStream(MessageContent.of(parts), hook)`。
+     *
+     * 注意：本重载与 [chatStream]`(messages: List<Message>)` 在 JVM 上擦除后签名相同，靠 `@JvmName`
+     * 区分；从 Kotlin 调用不受影响，但传**无类型参数的** `emptyList()` 会有歧义，请写成
+     * `listOf<ContentPart>(...)`，或直接用 `chatStream(MessageContent.of(...))` 重载。
+     *
+     * @param parts 本条 user 消息的内容块（至少一个）
+     * @param hook 可选的实时回调，与 Flow 事件一致
+     */
+    @JvmName("chatStreamParts")
+    public fun chatStream(parts: List<ContentPart>, hook: SseHook?): Flow<ChatChunk> =
+        streamContentFlow(MessageContent.of(parts), hook)
+
+    /** [chatStream] 各内容形态重载的唯一实现（private，不占用公开重载的 JVM 名字） */
+    private fun streamContentFlow(content: MessageContent, hook: SseHook?): Flow<ChatChunk> =
         core.streamFlow { session ->
             val history = mutableListOf<Message>().apply {
                 core.systemPromptMessage?.let { add(it) }
             }
-            streamLoop(core, history, userContent, hook, session)
+            streamLoop(core, history, content, hook, session)
         }
 
     /**
@@ -213,4 +258,14 @@ public class StatelessDeepseek(
     public override suspend fun availableModels(): List<Model> = core.availableModels()
 
     public override suspend fun balance(): UserBalance = core.balance()
+
+    /**
+     * Files API：上传图片一次，之后在请求里用 `file_id` 反复引用。
+     *
+     * 与 [Deepseek] 共用同一套实现；无状态客户端同样可以上传后把 `file_id` 放进
+     * 每一次 [chatStream] 的内容块里。
+     *
+     * @see DeepseekFiles
+     */
+    public override fun files(): DeepseekFiles = core.filesApi
 }

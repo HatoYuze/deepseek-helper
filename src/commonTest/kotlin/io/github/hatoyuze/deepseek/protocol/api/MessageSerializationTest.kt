@@ -11,6 +11,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 class MessageSerializationTest {
 
@@ -18,7 +19,7 @@ class MessageSerializationTest {
 
     @Test
     fun `system message serializes correctly`() {
-        val msg = Message(role = Role.System, content = "You are helpful")
+        val msg = Message(role = Role.System, content =MessageContent.of("You are helpful"))
         val str = json.encodeToString(serializer<Message>(), msg)
         val obj = json.parseToJsonElement(str).jsonObject
         assertEquals("system", obj["role"]!!.jsonPrimitive.content)
@@ -27,7 +28,7 @@ class MessageSerializationTest {
 
     @Test
     fun `user message serializes correctly`() {
-        val msg = Message(role = Role.User, content = "Hello")
+        val msg = Message(role = Role.User, content =MessageContent.of("Hello"))
         val str = json.encodeToString(serializer<Message>(), msg)
         val obj = json.parseToJsonElement(str).jsonObject
         assertEquals("user", obj["role"]!!.jsonPrimitive.content)
@@ -53,7 +54,7 @@ class MessageSerializationTest {
 
     @Test
     fun `tool message serializes correctly`() {
-        val msg = Message(role = Role.Tool, content = """{"temperature": 25}""", toolCallId = "call_001")
+        val msg = Message(role = Role.Tool, content =MessageContent.of("""{"temperature": 25}"""), toolCallId = "call_001")
         val str = json.encodeToString(serializer<Message>(), msg)
         val obj = json.parseToJsonElement(str).jsonObject
         assertEquals("tool", obj["role"]!!.jsonPrimitive.content)
@@ -63,9 +64,9 @@ class MessageSerializationTest {
     @Test
     fun `message list round-trip`() {
         val messages = listOf(
-            Message(role = Role.System, content = "sys"),
-            Message(role = Role.User, content = "hi"),
-            Message(role = Role.Assistance, content = "hello"),
+            Message(role = Role.System, content =MessageContent.of("sys")),
+            Message(role = Role.User, content =MessageContent.of("hi")),
+            Message(role = Role.Assistance, content =MessageContent.of("hello")),
         )
         val listSerializer = ListSerializer(serializer<Message>())
         val str = json.encodeToString(listSerializer, messages)

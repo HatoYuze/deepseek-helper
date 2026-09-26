@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 @OptIn(ExperimentalDeepseekApi::class)
 class DeepseekCoreConcurrencyTest {
@@ -114,7 +115,7 @@ class DeepseekCoreConcurrencyTest {
 
         val chatJob = launch {
             core.streamFlow<ChatChunk> { session ->
-                streamLoop(core, mutableListOf(), "hi", null, session)
+                streamLoop(core, mutableListOf(), MessageContent.of("hi"), null, session)
             }.collect { }
         }
         val fimJob = launch {
@@ -153,7 +154,7 @@ class DeepseekCoreConcurrencyTest {
 
         val chat = async {
             core.streamFlow<ChatChunk> { session ->
-                streamLoop(core, mutableListOf(), "hi", null, session)
+                streamLoop(core, mutableListOf(), MessageContent.of("hi"), null, session)
             }.toList()
         }
         val fim = async { core.fimFlow("prompt", null, null, null).toList() }
@@ -190,7 +191,7 @@ class DeepseekCoreConcurrencyTest {
 
         val job = launch {
             core.streamFlow<ChatChunk> { session ->
-                streamLoop(core, history, "temp", null, session)
+                streamLoop(core, history, MessageContent.of("temp"), null, session)
             }.collect { }
         }
         withTimeout(5_000) { started.await() }
@@ -199,9 +200,9 @@ class DeepseekCoreConcurrencyTest {
         assertTrue(history.isEmpty(), "被取消流的 user 消息应回滚")
 
         val chunks = core.streamFlow<ChatChunk> { session ->
-            streamLoop(core, history, "final", null, session)
+            streamLoop(core, history, MessageContent.of("final"), null, session)
         }.toList()
         assertTrue(chunks.any { it is ChatChunk.Done }, "取消后新的流应正常完成")
-        assertEquals(listOf(Message(Role.User, "final")), history, "成功流应只保留自己的 user 消息")
+        assertEquals(listOf(Message(Role.User, MessageContent.of("final"))), history, "成功流应只保留自己的 user 消息")
     }
 }

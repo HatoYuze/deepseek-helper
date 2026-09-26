@@ -20,10 +20,11 @@ import io.github.hatoyuze.deepseek.protocol.api.statelessDeepseek
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
-import org.junit.BeforeClass
 import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 // ═══════════════════════════════════════════════════════════
 // DeepSeek API 集成测试
@@ -42,21 +43,26 @@ private data class CalcResult(val a: Double, val b: Double, val operation: Strin
 class DeepSeekApiTest {
 
     companion object {
-        @JvmStatic
-        @BeforeClass
-        fun checkApiKey() {
-            // 未配置 key 时跳过（而不是失败），保证 CI 无密钥也能通过
-            assumeTrue(
-                "未配置 DEEPSEEK_API_KEY（环境变量或 -Ddeepseek.api.key），跳过线上集成测试",
-                resolveApiKey().isNotBlank(),
-            )
-        }
-
         fun resolveApiKey(): String {
             return System.getenv("DEEPSEEK_API_KEY")
                 ?: System.getProperty("deepseek.api.key")
                 ?: ""
         }
+    }
+
+    /**
+     * 未配置 key 时跳过（而不是失败），保证 CI 无密钥也能通过。
+     *
+     * 用实例级 `@Before` 而不是 `companion object` + `@JvmStatic @BeforeClass`：后者会让
+     * Gradle 的 JUnit4 扫描丢弃整个测试类（`No tests found for given includes`），
+     * 也就是说这些线上用例此前从未被真正执行过。
+     */
+    @Before
+    fun checkApiKey() {
+        assumeTrue(
+            "未配置 DEEPSEEK_API_KEY（环境变量或 -Ddeepseek.api.key），跳过线上集成测试",
+            resolveApiKey().isNotBlank(),
+        )
     }
 
     private val apiKey: String by lazy { resolveApiKey() }
@@ -436,8 +442,8 @@ class DeepSeekApiTest {
             // 用另一份历史整体替换：模型上下文必须等价于这份历史，而不是旧的 7391
             ds.replaceHistory(
                 listOf(
-                    Message(Role.User, "请记住：我最喜欢的数字是 2748。"),
-                    Message(Role.Assistance, "好的，我记住了：2748。"),
+                    Message(Role.User, MessageContent.of("请记住：我最喜欢的数字是 2748。")),
+                    Message(Role.Assistance, MessageContent.of("好的，我记住了：2748。")),
                 ),
             )
 
@@ -468,10 +474,10 @@ class DeepSeekApiTest {
             }
 
             val persisted = listOf(
-                Message(Role.System, "你是一个精确的助手，回答简短。"),
-                Message(Role.User, "请记住：本次会话的暗号是 ORANGE-42。"),
-                Message(Role.Assistance, "收到，暗号是 ORANGE-42。"),
-                Message(Role.User, "本次会话的暗号是什么？只回答暗号。"),
+                Message(Role.System, MessageContent.of("你是一个精确的助手，回答简短。")),
+                Message(Role.User, MessageContent.of("请记住：本次会话的暗号是 ORANGE-42。")),
+                Message(Role.Assistance, MessageContent.of("收到，暗号是 ORANGE-42。")),
+                Message(Role.User, MessageContent.of("本次会话的暗号是什么？只回答暗号。")),
             )
 
             val response = ds.chatStream(persisted).collectResponse()
@@ -482,7 +488,7 @@ class DeepSeekApiTest {
             }
 
             // 无状态承诺：实例不残留任何状态，第二次调用互不影响
-            val second = ds.chatStream(listOf(Message(Role.User, "只回复：SECOND"))).collectResponse()
+            val second = ds.chatStream(listOf(Message(Role.User, MessageContent.of("只回复：SECOND")))).collectResponse()
             println("✅ 第二次调用回复: ${second.content.take(40)}")
             assert(second.content.isNotBlank()) { "第二次调用不应为空" }
         }

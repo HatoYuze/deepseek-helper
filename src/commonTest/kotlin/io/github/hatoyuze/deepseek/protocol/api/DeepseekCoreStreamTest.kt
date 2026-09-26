@@ -13,6 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 class DeepseekCoreStreamTest {
 
@@ -59,7 +60,7 @@ class DeepseekCoreStreamTest {
 
         assertFailsWith<IllegalStateException> {
             core.streamFlow { session ->
-                streamLoop(core, history, "hello", null, session)
+                streamLoop(core, history, MessageContent.of("hello"), null, session)
             }.collect { }
         }
 
@@ -83,7 +84,7 @@ class DeepseekCoreStreamTest {
         val hook = SseHook { seen.add(it) }
 
         core.streamFlow { session ->
-            streamLoop(core, history, "hi", hook, session)
+            streamLoop(core, history, MessageContent.of("hi"), hook, session)
         }.collect { flowSeen.add(it) }
 
         assertEquals(seen, flowSeen, "hook 与 Flow 事件应完全一致")

@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 @OptIn(ExperimentalDeepseekApi::class)
 class StatelessDeepseekConcurrencyTest {
@@ -28,7 +29,7 @@ class StatelessDeepseekConcurrencyTest {
         val backend = GatedBackend { messages ->
             seen += messages
             flow {
-                emit(ChatChunk.ContentDelta("reply-${messages.last().content}"))
+                emit(ChatChunk.ContentDelta("reply-${messages.last().content?.asText()}"))
                 emit(ChatChunk.Done(1, 1, 1))
             }
         }
@@ -42,12 +43,12 @@ class StatelessDeepseekConcurrencyTest {
         }.awaitAll()
 
         assertEquals(20, seen.size, "每次 chatStream 应触发一次后端调用")
-        val byContent = seen.associateBy { it.last().content }
+        val byContent = seen.associateBy { it.last().content?.asText() }
         for (i in 1..20) {
             val messages = byContent["user-$i"]
             assertNotNull(messages, "user-$i 的 history 应被捕获")
             assertEquals(
-                listOf(Message(Role.System, "sys"), Message(Role.User, "user-$i")),
+                listOf(Message(Role.System, MessageContent.of("sys")), Message(Role.User, MessageContent.of("user-$i"))),
                 messages,
                 "并发流的 history 不应互相污染",
             )

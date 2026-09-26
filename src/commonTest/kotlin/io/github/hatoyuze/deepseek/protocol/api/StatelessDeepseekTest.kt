@@ -41,7 +41,7 @@ class StatelessDeepseekTest {
 
         assertEquals("sk-test-key", ds.apiKey)
         assertEquals("deepseek-v4-flash", ds.resolvedModel.id)
-        assertEquals("You are a stateless assistant", ds.systemPromptMessage?.content)
+        assertEquals("You are a stateless assistant", ds.systemPromptMessage?.content?.asText())
         assertEquals(100, ds.config.maxTokens)
         assertEquals(0.5, ds.config.temperature)
         assertEquals(ReasoningEffort.MAX, (ds.config.thinkingMode as ThinkingMode.WithEffort).effort)

@@ -16,7 +16,7 @@ It supports interruption, regeneration, custom Tool Call behavior, FIM completio
 ```kotlin
 // build.gradle.kts (commonMain)
 dependencies {
-    implementation("io.github.hatoyuze:deepseek-helper:0.3.0")
+    implementation("io.github.hatoyuze:deepseek-helper:0.4.0")
 }
 ```
 
@@ -218,6 +218,161 @@ val response = ds.fimStream(
 println(response.text)
 println("Used ${response.usage.totalTokens} tokens")
 ```
+
+#### Message Building DSL (recommended for image conversations)
+
+Hand-writing content blocks is verbose, so the library ships a `buildDeepseekMessages` DSL:
+declare each message with `Role.X says ...` and combine images with text using `+`.
+
+```kotlin
+val image = imageOf("photos/cat.jpg")   // local file: read and inlined as base64, MIME sniffed
+
+val messages = buildDeepseekMessages {
+    Role.System says "You are a helpful assistant"
+
+    Role.User says image + "What is its content"
+
+    Role.Assistance says "This image describes a scene that ..."
+}   // returns List<Message> — ready for replaceHistory / chatStream
+
+ds.chatStream(messages[1].content!!).collectResponse()
+```
+
+`imageOf(...)` accepts several sources, with a fixed and predictable dispatch order:
+
+| Input | Behaviour |
+|---|---|
+| `ByteArray` | inlined as a base64 data URL; MIME sniffed from **magic bytes** (JPEG / PNG / GIF / WebP) |
+| `FileSource` (`Bytes` / `Path`) | read then inlined; the library does **not** close it (use `use {}` yourself) |
+| `"https://…"` / `"data:…"` | passed through as a remote link / already-encoded data URL |
+| any other `String` | treated as a **local file path**, read and inlined |
+| JVM / Android extensions | `File`, `java.net.URI` (including `file:`), `InputStream` |
+
+To reference an already-uploaded image by `file_id`, use `imageFileOf(...)` (a plain string in
+`imageOf` means URL/path, and a `file-api-…` id is neither):
+
+```kotlin
+val uploaded = ds.files().upload("photos/cat.jpg", "image/jpeg")
+
+val messages = buildDeepseekMessages {
+    Role.User says imageFileOf(uploaded.id) + "What is in this image?"
+}
+```
+
+How `+` combines content (both sides are content; order is concatenation order):
+
+```kotlin
+imageOf(bytes) + "describe it"                 // image + text
+imageOf(a) + imageOf(b)                        // two images
+imageOf(a) + imageOf(b) + "compare them"        // chained
+MessageContent.textPart("First: ") + imageOf(a) // text block first
+```
+
+> `"text" + imageOf(...)` (string on the left) does **not** hit this library's operator — Kotlin
+> resolves it to stdlib's `String.plus(Any?)` and you get a string back. Put the text block first
+> with `MessageContent.textPart("text") + imageOf(...)` instead.
+>
+> The DSL is synchronous: `imageOf` reads local files on the calling thread, so use
+> `withContext(Dispatchers.IO)` for large images or on the UI thread. Read failures throw
+> `FileSourceReadException`; unsupported sources / blank URLs / oversized bytes throw
+> `IllegalArgumentException` (never a silent failure).
+
+#### Image Input (Vision)
+
+`deepseek-flash` accepts images alongside text: `Message.content` can be a **content block array**
+(`MessageContent` / `ContentPart`) instead of plain text. All three official ways to send an image
+are supported.
+
+```kotlin
+// 1) Inline base64 — simplest for a local file (<= 32 MiB per image, counts toward the 48 MiB body limit)
+val jpegBytes: ByteArray = readLocalFile("cat.jpg")
+
+val response = ds.chatStream(
+    MessageContent.of(
+        MessageContent.textPart("What is in this image?"),
+        MessageContent.imageDataUrl("image/jpeg", jpegBytes), // the library encodes the base64 for you
+    ),
+).collectResponse()
+
+// 2) External image URL — the model downloads it (URL <= 8192 chars, image <= 32 MiB, fetched within 60s)
+ds.chatStream(MessageContent.image("https://example.com/cat.jpg")).collectResponse()
+
+// 3) Files API — upload once, reuse across requests (<= 64 MiB per image, recommended)
+val uploaded = ds.files().upload("cat.jpg", "image/jpeg")
+ds.chatStream(MessageContent.imageFile(uploaded.id)).collectResponse()
+```
+
+If you would rather pass the blocks directly, use the list overload:
+
+```kotlin
+ds.chatStream(
+    listOf(
+        MessageContent.textPart("Describe this image"),
+        ContentPart.ImagePart(imageUrl = "https://example.com/cat.jpg", detail = ImageUrlDetail.Low),
+    ),
+).collectResponse()
+```
+
+Detail level (`ImageUrlDetail`): `Low` downscales to 512x512 (faster, fewer tokens);
+`High` / `Original` / `Auto` keep the original image (`Auto` is the default and currently equals
+`Original`).
+
+> Images are only allowed in **user** messages: putting an image into a system or assistant message
+> throws `IllegalArgumentException` before any request is sent, instead of waiting for a 400.
+>
+> Read text out of history with `message.content?.asText()` (a content-block message may have no text
+> block at all). String literals such as `Message(Role.User, "hi")` still compile.
+
+#### Files API (Upload Images Once, Reuse Them)
+
+```kotlin
+val files = ds.files()
+
+// Upload: mimeType is only a multipart hint — the server decides the format from the file content
+val uploaded = files.upload("photos/cat.jpg", "image/jpeg")
+
+// With an expiry (1 hour to 30 days); omit it and the file never expires
+val temporary = files.upload(
+    FileSource.Bytes(jpegBytes),
+    mimeType = "image/jpeg",
+    filename = "cat.jpg",
+    options = UploadOptions(expiresAfterSeconds = 3600),
+)
+
+println(uploaded.id)        // file-api-xxxxxxxxxxxxxxxx
+println(uploaded.expiresAt) // only present when an expiry was set
+
+// Reuse: upload once, reference it in as many requests as you like
+ds.chatStream(MessageContent.imageFile(uploaded.id)).collectResponse()
+
+// List your files with cursor pagination
+var page = files.list(limit = 100)
+while (page.hasMore) {
+    page.data.forEach { println("${it.filename} ${it.bytes}B") }
+    page = files.list(after = page.lastId, limit = 100)
+}
+
+// Retrieve and delete
+val same = files.retrieve(uploaded.id)
+files.delete(uploaded.id)
+```
+
+When you want to manage the resource yourself, `FileSource` implements `AutoCloseable`:
+
+```kotlin
+openFileSource("photos/cat.jpg").use { source ->
+    ds.files().upload(source, mimeType = "image/jpeg")
+}
+```
+
+> Path sources (`FileSource.Path`) read the file directly on JVM / Android and throw
+> `FileSourceReadException` on failure; **Native / JS / Wasm do not support path sources**
+> (the Kotlin/Native metadata checker rejects platform number types), so read the bytes yourself and
+> use `FileSource.Bytes`.
+>
+> Official limits: <= 64 MiB per file, filename <= 512 chars, 25 GiB / 10000 files per user,
+> <= 600 images per request. The library only validates what it locally can (expiry range,
+> pagination `limit`, required identifiers).
 
 ### Some Features
 

@@ -24,6 +24,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 @OptIn(ExperimentalDeepseekApi::class)
 class ResponsesApiTest {
@@ -35,8 +36,8 @@ class ResponsesApiTest {
     @Test
     fun `toResponsesInputItems maps user and assistant text plus reasoning`() {
         val messages = listOf(
-            Message(Role.User, "hello"),
-            Message(Role.Assistance, "hi there", reasoningContent = "thinking..."),
+            Message(Role.User, MessageContent.of("hello")),
+            Message(Role.Assistance, MessageContent.of("hi there"), reasoningContent = "thinking..."),
         )
 
         val items = messages.toResponsesInputItems().jsonArray
@@ -102,8 +103,8 @@ class ResponsesApiTest {
     @Test
     fun `toResponsesInputItems maps tool results and skips magic web search tool`() {
         val messages = listOf(
-            Message(Role.Tool, "42", toolCallId = "call_1"),
-            Message(Role.Tool, """{"status":"completed"}""", name = DEEPSEEK_WEB_SEARCH_TOOL),
+            Message(Role.Tool, MessageContent.of("42"), toolCallId = "call_1"),
+            Message(Role.Tool, MessageContent.of("""{"status":"completed"}"""), name = DEEPSEEK_WEB_SEARCH_TOOL),
         )
 
         val items = messages.toResponsesInputItems().jsonArray
@@ -120,9 +121,9 @@ class ResponsesApiTest {
     @Test
     fun `extractResponsesInstructions takes first non-empty system message`() {
         val messages = listOf(
-            Message(Role.System, ""),
-            Message(Role.System, "You are helpful"),
-            Message(Role.User, "hi"),
+            Message(Role.System, MessageContent.of("")),
+            Message(Role.System, MessageContent.of("You are helpful")),
+            Message(Role.User, MessageContent.of("hi")),
         )
 
         val (instructions, rest) = extractResponsesInstructions(messages)
@@ -134,7 +135,7 @@ class ResponsesApiTest {
 
     @Test
     fun `extractResponsesInstructions returns null when no system message`() {
-        val messages = listOf(Message(Role.User, "hi"))
+        val messages = listOf(Message(Role.User, MessageContent.of("hi")))
         val (instructions, rest) = extractResponsesInstructions(messages)
         assertNull(instructions)
         assertEquals(messages, rest)

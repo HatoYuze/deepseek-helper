@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 /**
  * JVM 重压测试：真实并行调度下验证历史替换/清空的并发契约（D1）。
@@ -31,7 +32,7 @@ import kotlin.test.assertTrue
  */
 class DeepseekHistoryStressTest {
 
-    private val system = Message(Role.System, "sys")
+    private val system = Message(Role.System, MessageContent.of("sys"))
 
     /** 可切换行为的后端：挂起模式下等待取消，放行模式下立即完整返回一轮回复。 */
     private class BlockingProbe {
@@ -70,7 +71,7 @@ class DeepseekHistoryStressTest {
             val job = launch(Dispatchers.Default) { ds.chatStream("blocked-$round").collect { } }
             withTimeout(10_000) { probe.started.receive() }
 
-            val installed = (1..(round % 5 + 1)).map { Message(Role.User, "kept-$round-$it") }
+            val installed = (1..(round % 5 + 1)).map { Message(Role.User, MessageContent.of("kept-$round-$it")) }
             ds.replaceHistory(installed)
             withTimeout(10_000) { job.join() }
 
@@ -83,11 +84,11 @@ class DeepseekHistoryStressTest {
 
         // 风暴之后实例仍可用：安装的历史作为下一轮请求的上下文，并正常提交 assistant 回复
         probe.stopBlocking()
-        ds.replaceHistory(listOf(Message(Role.User, "restored")))
+        ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("restored"))))
         ds.chatStream("final").collect { }
 
         assertEquals(
-            listOf(Message(Role.User, "restored"), Message(Role.User, "final"), Message(Role.Assistance, "ok")),
+            listOf(Message(Role.User, MessageContent.of("restored")), Message(Role.User, MessageContent.of("final")), Message(Role.Assistance, MessageContent.of("ok"))),
             ds.messages,
             "替换风暴后实例应继续正常工作",
         )
@@ -96,8 +97,8 @@ class DeepseekHistoryStressTest {
     @Test
     fun `concurrent readers only ever observe whole installed histories`() = runBlocking {
         val ds = statefulDeepseek(GatedBackend(), prompt = "sys")
-        val listA = (1..5).map { Message(Role.User, "A$it") }
-        val listB = (1..9).map { Message(Role.User, "B$it") }
+        val listA = (1..5).map { Message(Role.User, MessageContent.of("A$it")) }
+        val listB = (1..9).map { Message(Role.User, MessageContent.of("B$it")) }
         // 精确替换：安装的就是传入列表本身；clearHistory 回到初始历史 [system]
         val accepted = setOf(listA, listB, listOf(system))
 
@@ -147,15 +148,15 @@ class DeepseekHistoryStressTest {
         // 契约（D1）：历史操作由调用方串行化 —— 连续替换/清空/追加后状态必须精确可预测
         repeat(1_000) { i ->
             when (i % 4) {
-                0 -> ds.replaceHistory(listOf(Message(Role.User, "u$i")))
-                1 -> ds.addMessage(Message(Role.Assistance, "a$i"))
+                0 -> ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("u$i"))))
+                1 -> ds.addMessage(Message(Role.Assistance, MessageContent.of("a$i")))
                 2 -> ds.clearHistory()
                 else -> ds.replaceHistory(emptyList())
             }
         }
-        ds.replaceHistory(listOf(Message(Role.User, "final")))
+        ds.replaceHistory(listOf(Message(Role.User, MessageContent.of("final"))))
 
-        assertEquals(listOf(Message(Role.User, "final")), ds.messages)
+        assertEquals(listOf(Message(Role.User, MessageContent.of("final"))), ds.messages)
         assertEquals(1, ds.getMessageCount())
         assertEquals(0, probe.callCount, "纯历史操作不应触发任何后端调用")
     }

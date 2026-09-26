@@ -13,13 +13,14 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 
 /**
  * [StatelessDeepseek.chatStream] 的完整 messages 重载：请求内容与「实例不留状态」语义固化。
  */
 class StatelessDeepseekMessagesTest {
 
-    private val system = Message(Role.System, "sys")
+    private val system = Message(Role.System, MessageContent.of("sys"))
 
     private fun stateless(
         seen: MutableList<List<Message>>,
@@ -41,9 +42,9 @@ class StatelessDeepseekMessagesTest {
         val seen = mutableListOf<List<Message>>()
         val ds = stateless(seen)
         val messages = listOf(
-            Message(Role.User, "u1"),
-            Message(Role.Assistance, "a1"),
-            Message(Role.User, "u2"),
+            Message(Role.User, MessageContent.of("u1")),
+            Message(Role.Assistance, MessageContent.of("a1")),
+            Message(Role.User, MessageContent.of("u2")),
         )
 
         val chunks = ds.chatStream(messages).toList()
@@ -56,7 +57,7 @@ class StatelessDeepseekMessagesTest {
     fun `chatStream with messages sends exactly the list when no prompt is set`() = runTest {
         val seen = mutableListOf<List<Message>>()
         val ds = stateless(seen, prompt = null)
-        val messages = listOf(Message(Role.System, "from database"), Message(Role.User, "u1"))
+        val messages = listOf(Message(Role.System, MessageContent.of("from database")), Message(Role.User, MessageContent.of("u1")))
 
         ds.chatStream(messages).toList()
 
@@ -67,11 +68,11 @@ class StatelessDeepseekMessagesTest {
     fun `chatStream with messages leaves no instance state across consecutive calls`() = runTest {
         val seen = mutableListOf<List<Message>>()
         val ds = stateless(seen)
-        val first = listOf(Message(Role.User, "first"))
+        val first = listOf(Message(Role.User, MessageContent.of("first")))
         val second = listOf(
-            Message(Role.User, "second-1"),
-            Message(Role.Assistance, "second-2"),
-            Message(Role.User, "second-3"),
+            Message(Role.User, MessageContent.of("second-1")),
+            Message(Role.Assistance, MessageContent.of("second-2")),
+            Message(Role.User, MessageContent.of("second-3")),
         )
 
         ds.chatStream(first).toList()
@@ -89,14 +90,14 @@ class StatelessDeepseekMessagesTest {
     fun `chatStream with messages can be collected repeatedly with the same request body`() = runTest {
         val seen = mutableListOf<List<Message>>()
         val ds = stateless(seen)
-        val messages = listOf(Message(Role.User, "u1"))
+        val messages = listOf(Message(Role.User, MessageContent.of("u1")))
 
         val response = ds.chatStream(messages)
         response.toList()
         response.toList()
 
         assertEquals(2, seen.size, "重复收集同一个 Flow 应各发一次请求")
-        assertEquals(listOf(system, Message(Role.User, "u1")), seen[0])
+        assertEquals(listOf(system, Message(Role.User, MessageContent.of("u1"))), seen[0])
         assertEquals(seen[0], seen[1], "重复收集不得复用上一轮的请求缓冲（Flow 是冷的）")
     }
 
@@ -104,15 +105,15 @@ class StatelessDeepseekMessagesTest {
     fun `chatStream with messages snapshots the caller list at call time and never mutates it`() = runTest {
         val seen = mutableListOf<List<Message>>()
         val ds = stateless(seen)
-        val messages = mutableListOf(Message(Role.User, "u1"))
+        val messages = mutableListOf(Message(Role.User, MessageContent.of("u1")))
 
         val response = ds.chatStream(messages)
-        messages.add(Message(Role.User, "late"))
+        messages.add(Message(Role.User, MessageContent.of("late")))
 
         response.toList()
 
-        assertEquals(listOf(system, Message(Role.User, "u1")), seen.single(), "调用后再改列表不应影响本次请求")
-        assertEquals(listOf(Message(Role.User, "u1"), Message(Role.User, "late")), messages, "库不得修改调用方列表")
+        assertEquals(listOf(system, Message(Role.User, MessageContent.of("u1"))), seen.single(), "调用后再改列表不应影响本次请求")
+        assertEquals(listOf(Message(Role.User, MessageContent.of("u1")), Message(Role.User, MessageContent.of("late"))), messages, "库不得修改调用方列表")
     }
 
     @Test
@@ -143,19 +144,19 @@ class StatelessDeepseekMessagesTest {
         )
         ds.toolHost = pingHost()
 
-        ds.chatStream(listOf(Message(Role.User, "u1"))).toList()
+        ds.chatStream(listOf(Message(Role.User, MessageContent.of("u1")))).toList()
 
         assertEquals(2, seen.size, "工具调用应触发第二轮请求")
         val second = seen[1]
-        assertEquals(listOf(system, Message(Role.User, "u1")), second.take(2))
+        assertEquals(listOf(system, Message(Role.User, MessageContent.of("u1"))), second.take(2))
         assertEquals(Role.Assistance, second[2].role)
         assertNotNull(second[2].toolCalls, "第二轮请求应带上 assistant 的 tool_calls")
         assertEquals(Role.Tool, second[3].role)
 
         // 工具循环的中间消息只存在于本次请求的局部缓冲里
-        ds.chatStream(listOf(Message(Role.User, "u2"))).toList()
+        ds.chatStream(listOf(Message(Role.User, MessageContent.of("u2")))).toList()
 
-        assertEquals(listOf(system, Message(Role.User, "u2")), seen[2], "后续调用不得带上上一轮的工具消息")
+        assertEquals(listOf(system, Message(Role.User, MessageContent.of("u2"))), seen[2], "后续调用不得带上上一轮的工具消息")
     }
 
     private fun pingHost(): ToolCallHost {

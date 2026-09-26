@@ -79,8 +79,11 @@ public abstract interface class io/github/hatoyuze/deepseek/protocol/api/ChatCli
 	public abstract fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun cancelStream ()V
+	public abstract fun chatStream (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public abstract fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatClient;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatClient;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public abstract fun files ()Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;
 	public abstract fun getApiKey ()Ljava/lang/String;
 	public abstract fun getConfig ()Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;
 	public abstract fun getExecutionContext ()Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;
@@ -91,6 +94,7 @@ public abstract interface class io/github/hatoyuze/deepseek/protocol/api/ChatCli
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/api/ChatClient$DefaultImpls {
+	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatClient;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/ChatClient;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 }
 
@@ -152,10 +156,14 @@ public class io/github/hatoyuze/deepseek/protocol/api/Deepseek : io/github/hatoy
 	public fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun cancelStream ()V
+	public fun chatStream (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public final fun chatStream (Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public fun clearHistory ()V
 	public fun continueStream (Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun continueStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public fun files ()Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;
 	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public fun findUserMessageIndex (Ljava/lang/String;)I
@@ -213,6 +221,35 @@ public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekBuilderKt {
 	public static final fun deepseek (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/Deepseek;
 	public static final fun statelessDeepseek (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/ChatConfig;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;
 	public static final fun statelessDeepseek (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/DeepseekFiles {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles$Companion;
+	public static final field MAX_LIST_LIMIT I
+	public static final field MIN_LIST_LIMIT I
+	public abstract fun delete (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun list (Ljava/lang/String;Ljava/lang/Integer;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;Lio/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun list$default (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;Ljava/lang/String;Ljava/lang/Integer;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;Lio/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public abstract fun retrieve (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun upload (Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun upload (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun upload$default (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun upload$default (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekFiles$Companion {
+	public static final field MAX_LIST_LIMIT I
+	public static final field MIN_LIST_LIMIT I
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekFiles$DefaultImpls {
+	public static synthetic fun list$default (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;Ljava/lang/String;Ljava/lang/Integer;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;Lio/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun upload$default (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public static synthetic fun upload$default (Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/DeepseekJsonKt {
+	public static final fun getDeepseekJson ()Lkotlinx/serialization/json/Json;
 }
 
 public abstract interface annotation class io/github/hatoyuze/deepseek/protocol/api/ExperimentalDeepseekApi : java/lang/annotation/Annotation {
@@ -283,9 +320,12 @@ public final class io/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek : 
 	public fun availableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun balance (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun cancelStream ()V
+	public fun chatStream (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public fun chatStream (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public final fun chatStream (Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun chatStream$default (Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+	public final fun chatStreamParts (Ljava/util/List;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
+	public fun files ()Lio/github/hatoyuze/deepseek/protocol/api/DeepseekFiles;
 	public final fun fimStream (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun fimStream$default (Lio/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lio/github/hatoyuze/deepseek/protocol/api/SseHook;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 	public fun getApiKey ()Ljava/lang/String;
@@ -299,6 +339,51 @@ public final class io/github/hatoyuze/deepseek/protocol/api/StatelessDeepseek : 
 	public fun setExecutionContext (Lio/github/hatoyuze/deepseek/toolcall/executor/ToolExecutionContext;)V
 	public final fun setModelForFim (Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;)V
 	public fun setToolHost (Lio/github/hatoyuze/deepseek/toolcall/pipeline/ToolCallHost;)V
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/dsl/DeepseekMessagesBuilder {
+	public fun <init> ()V
+	public final fun add (Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;)V
+	public final fun build ()Ljava/util/List;
+	public final fun says (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+	public final fun says (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/dsl/MessageDslJvmKt {
+	public static final fun imageOf (Ljava/io/File;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imageOf (Ljava/io/InputStream;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imageOf (Ljava/net/URI;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun imageOf$default (Ljava/io/File;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun imageOf$default (Ljava/io/InputStream;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun imageOf$default (Ljava/net/URI;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imagePartOf (Ljava/io/File;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static final fun imagePartOf (Ljava/io/InputStream;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static final fun imagePartOf (Ljava/net/URI;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default (Ljava/io/File;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default (Ljava/io/InputStream;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default (Ljava/net/URI;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/dsl/MessageDslKt {
+	public static final fun buildDeepseekMessages (Lkotlin/jvm/functions/Function1;)Ljava/util/List;
+	public static final fun imageFileOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imageOf (Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imageOf (Ljava/lang/Object;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imageOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imageOf ([B)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun imageOf$default (Ljava/lang/Object;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun imagePartOf (Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static final fun imagePartOf (Ljava/lang/Object;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static final fun imagePartOf (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static final fun imagePartOf ([BLio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default (Ljava/lang/Object;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun imagePartOf$default ([BLio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static final fun plus (Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun plus (Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun plus (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static final fun plus (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo {
@@ -334,6 +419,107 @@ public final class io/github/hatoyuze/deepseek/protocol/api/entity/BalanceInfo$C
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$Companion;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart : io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFileData ()Ljava/lang/String;
+	public final fun getFileId ()Ljava/lang/String;
+	public final fun getFilename ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$FilePart$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart : io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;Ljava/lang/String;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDetail ()Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public final fun getFileId ()Ljava/lang/String;
+	public final fun getImageUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$ImagePart$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart : io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Currency : java/lang/Enum {
 	public static final field CNY Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency;
 	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Currency$Companion;
@@ -347,21 +533,189 @@ public final class io/github/hatoyuze/deepseek/protocol/api/entity/Currency$Comp
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;JJLjava/lang/String;Ljava/lang/String;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;JJLjava/lang/String;Ljava/lang/String;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;JJLjava/lang/String;Ljava/lang/String;Ljava/lang/Long;)Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile;Ljava/lang/String;Ljava/lang/String;JJLjava/lang/String;Ljava/lang/String;Ljava/lang/Long;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBytes ()J
+	public final fun getCreatedAt ()J
+	public final fun getExpiresAt ()Ljava/lang/Long;
+	public final fun getFilename ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getObj ()Ljava/lang/String;
+	public final fun getPurpose ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/DeepseekFile$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDeleted ()Z
+	public final fun getId ()Ljava/lang/String;
+	public final fun getObj ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileDeletion$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileList {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Z)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getData ()Ljava/util/List;
+	public final fun getFirstId ()Ljava/lang/String;
+	public final fun getHasMore ()Z
+	public final fun getLastId ()Ljava/lang/String;
+	public final fun getObj ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/FileList$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/hatoyuze/deepseek/protocol/api/entity/FileList;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileList$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileOrder : java/lang/Enum {
+	public static final field Asc Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;
+	public static final field Desc Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getWireName ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/FileOrder;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose : java/lang/Enum {
+	public static final field UserData Lio/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getWireName ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/FilePurpose;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/entity/FileSource : java/lang/AutoCloseable {
+	public abstract fun readBytes ()[B
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileSource$Bytes : io/github/hatoyuze/deepseek/protocol/api/entity/FileSource {
+	public fun <init> ([B)V
+	public fun close ()V
+	public fun readBytes ()[B
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileSource$Path : io/github/hatoyuze/deepseek/protocol/api/entity/FileSource {
+	public fun <init> (Ljava/lang/String;)V
+	public fun close ()V
+	public final fun getPath ()Ljava/lang/String;
+	public fun readBytes ()[B
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileSourceKt {
+	public static final fun openFileSource (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/FileSourceReadException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getPath ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail : java/lang/Enum {
+	public static final field Auto Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail$Companion;
+	public static final field High Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public static final field Low Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public static final field Original Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Message {
 	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Message$Companion;
-	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;)V
-	public synthetic fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
-	public final fun component2 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/util/List;
 	public final fun component6 ()Ljava/lang/Boolean;
 	public final fun component7 ()Ljava/lang/String;
-	public final fun copy (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
-	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+	public final fun copy (Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Message;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getContent ()Ljava/lang/String;
+	public final fun getContent ()Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getPrefix ()Ljava/lang/Boolean;
 	public final fun getReasoningContent ()Ljava/lang/String;
@@ -385,6 +739,63 @@ public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/Mes
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Message$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public abstract interface class io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Companion;
+	public static final field MAX_IMAGE_URL_LENGTH I
+	public static final field MAX_INLINE_IMAGE_BYTES I
+	public fun asText ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Companion {
+	public static final field MAX_IMAGE_URL_LENGTH I
+	public static final field MAX_INLINE_IMAGE_BYTES I
+	public final fun dataUrl (Ljava/lang/String;[B)Ljava/lang/String;
+	public final fun fileData (Ljava/lang/String;Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun fileData$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Companion;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public final fun image (Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun image$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Companion;Ljava/lang/String;Lio/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public final fun imageDataUrl (Ljava/lang/String;[B)Ljava/lang/String;
+	public final fun imageFile (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public final fun invoke (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Text;
+	public final fun of (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Text;
+	public final fun of (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public final fun of ([Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+	public final fun textPart (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart$TextPart;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$DefaultImpls {
+	public static fun asText (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent;)Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts : io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent {
+	public fun <init> (Ljava/util/List;)V
+	public fun asText ()Ljava/lang/String;
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;Ljava/util/List;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Parts;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getParts ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Text : io/github/hatoyuze/deepseek/protocol/api/entity/MessageContent {
+	public fun <init> (Ljava/lang/String;)V
+	public fun asText ()Ljava/lang/String;
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Text;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Text;Ljava/lang/String;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/MessageContent$Text;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/MessageContentKt {
+	public static final fun textOrNull (Lio/github/hatoyuze/deepseek/protocol/api/entity/ContentPart;)Ljava/lang/String;
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Model {
@@ -574,6 +985,25 @@ public final class io/github/hatoyuze/deepseek/protocol/api/entity/ToolChoice$Re
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions {
+	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions$Companion;
+	public static final field MAX_EXPIRY_SECONDS I
+	public static final field MIN_EXPIRY_SECONDS I
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/lang/Integer;)Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;
+	public static synthetic fun copy$default (Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;Ljava/lang/Integer;ILjava/lang/Object;)Lio/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getExpiresAfterSeconds ()Ljava/lang/Integer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/UploadOptions$Companion {
+}
+
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Usage {
 	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Usage$Companion;
 	public fun <init> (JJJLjava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
@@ -627,6 +1057,12 @@ public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/Use
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/UserBalance$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/image/ImageResourcesKt {
+	public static final fun fileSourceOfResource (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/FileSource;
+	public static final fun imageBytesOfResource (Ljava/lang/String;)[B
+	public static final fun imageResourceUrl (Ljava/lang/String;)Ljava/net/URL;
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/net/DeepseekFeature {

@@ -3,7 +3,10 @@ package io.github.hatoyuze.deepseek.protocol.api.impl
 import io.github.hatoyuze.deepseek.protocol.api.ChatChunk
 import io.github.hatoyuze.deepseek.protocol.api.ChatConfig
 import io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi
+import io.github.hatoyuze.deepseek.protocol.api.entity.ContentPart
+import io.github.hatoyuze.deepseek.protocol.api.entity.ImageUrlDetail
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 import io.github.hatoyuze.deepseek.protocol.api.entity.ResponseFormat
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
@@ -129,6 +133,9 @@ internal class DeepseekResponsesApiImpl(
         )
 
         // ── 请求装配 ──
+
+        // 官方限制：图片只能出现在 user 消息里；在装配请求体/发起请求前 fail-fast
+        messages.requireCompletionsInputAllowed()
 
         val (instructions, inputMessages) = extractResponsesInstructions(messages)
 
@@ -306,9 +313,9 @@ internal class DeepseekResponsesApiImpl(
  * 并从 input 列表中排除；其余 System 消息保留为普通 message item。
  */
 internal fun extractResponsesInstructions(messages: List<Message>): Pair<String?, List<Message>> {
-    val index = messages.indexOfFirst { it.role == Role.System && !it.content.isNullOrEmpty() }
+    val index = messages.indexOfFirst { it.role == Role.System && !it.content?.asText().isNullOrEmpty() }
     if (index < 0) return null to messages
-    return messages[index].content to messages.filterIndexed { i, _ -> i != index }
+    return messages[index].content?.asText() to messages.filterIndexed { i, _ -> i != index }
 }
 
 /**
@@ -316,9 +323,19 @@ internal fun extractResponsesInstructions(messages: List<Message>): Pair<String?
  *
  * item 类型严格限制在官方白名单：
  * `message` / `function_call` / `function_call_output` / `reasoning` / `web_search_call`。
+ *
+ * 内容块映射（Responses 侧的官方名字与 Chat Completions 不同）：
+ * - [MessageContent.Text] 与 [ContentPart.TextPart] → `input_text`（assistant 的文本 → `output_text`）
+ * - [ContentPart.ImagePart] → `input_image`（`image_url` 或 `file_id`，二者互斥；`file_id` 时省略 `detail`）
+ * - [ContentPart.FilePart] → `input_image` + `file_data`：Responses 没有 `file` 内容块，
+ *   而 `file_data` 本身就是 base64 data URL，语义等价；`filename` 无对应字段，不透传
+ *
+ * @throws IllegalArgumentException 非 user 消息携带图片内容块时（官方只允许 user 消息带图）
  */
 @OptIn(ExperimentalDeepseekApi::class)
 internal fun List<Message>.toResponsesInputItems(): JsonElement {
+    // 图片只能出现在 user 消息里：这一步是转换的入口，先自检（后端还有一次同样的检查）
+    requireCompletionsInputAllowed()
     var reasoningCounter = 0
     return buildJsonArray {
         for (msg in this@toResponsesInputItems) {
@@ -326,12 +343,7 @@ internal fun List<Message>.toResponsesInputItems(): JsonElement {
                 Role.System, Role.User -> add(buildJsonObject {
                     put("type", "message")
                     put("role", msg.role.name.lowercase())
-                    put("content", buildJsonArray {
-                        add(buildJsonObject {
-                            put("type", "input_text")
-                            put("text", msg.content ?: "")
-                        })
-                    })
+                    put("content", msg.toResponsesContentBlocks("input_text"))
                 })
 
                 Role.Assistance -> {
@@ -348,16 +360,11 @@ internal fun List<Message>.toResponsesInputItems(): JsonElement {
                             })
                         })
                     }
-                    if (!msg.content.isNullOrEmpty()) {
+                    if (!msg.content?.asText().isNullOrEmpty()) {
                         add(buildJsonObject {
                             put("type", "message")
                             put("role", "assistant")
-                            put("content", buildJsonArray {
-                                add(buildJsonObject {
-                                    put("type", "output_text")
-                                    put("text", msg.content)
-                                })
-                            })
+                            put("content", msg.toResponsesContentBlocks("output_text"))
                         })
                     }
                     msg.toolCalls?.forEach { tc ->
@@ -388,12 +395,84 @@ internal fun List<Message>.toResponsesInputItems(): JsonElement {
                     add(buildJsonObject {
                         put("type", "function_call_output")
                         put("call_id", msg.toolCallId ?: "")
-                        put("output", msg.content ?: "")
+                        put("output", msg.content?.asText() ?: "")
                     })
                 }
             }
         }
     }
+}
+
+/**
+ * 把一条消息的内容转换为 Responses API 的内容块数组。
+ *
+ * [textType] 区分文本块的官方类型名：user/system 是 `input_text`，assistant 是 `output_text`。
+ *
+ * @throws IllegalArgumentException 该消息的角色不允许携带图片时（见 [requireImagesAllowed]）
+ */
+private fun Message.toResponsesContentBlocks(textType: String): JsonArray {
+    // 角色校验由 toResponsesInputItems 的入口统一做（同一份 messages 只扫一次）
+    return when (val content = content) {
+        null -> buildJsonArray {
+            add(buildJsonObject {
+                put("type", textType)
+                put("text", "")
+            })
+        }
+
+        is MessageContent.Text -> buildJsonArray {
+            add(buildJsonObject {
+                put("type", textType)
+                put("text", content.text)
+            })
+        }
+
+        is MessageContent.Parts -> buildJsonArray {
+            content.parts.forEach { part ->
+                add(
+                    when (part) {
+                        is ContentPart.TextPart -> buildJsonObject {
+                            put("type", textType)
+                            put("text", part.text)
+                        }
+
+                        is ContentPart.ImagePart -> buildJsonObject {
+                            put("type", "input_image")
+                            val url = part.imageUrl
+                            if (url != null) {
+                                put("image_url", url)
+                                // file_id 形态下 detail 被服务端忽略，因此只在 URL 形态下发
+                                if (part.detail != ImageUrlDetail.Auto) {
+                                    put("detail", part.detail.wireName())
+                                }
+                            } else {
+                                put("file_id", part.fileId.orEmpty())
+                            }
+                        }
+
+                        // Responses 没有 file 内容块：file_data 本身就是 base64 data URL，语义等价
+                        is ContentPart.FilePart -> buildJsonObject {
+                            put("type", "input_image")
+                            val fileId = part.fileId
+                            if (fileId != null) {
+                                put("file_id", fileId)
+                            } else {
+                                put("image_url", part.fileData.orEmpty())
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** 内容块序列化用的官方 wire 取值 */
+private fun ImageUrlDetail.wireName(): String = when (this) {
+    ImageUrlDetail.Low -> "low"
+    ImageUrlDetail.High -> "high"
+    ImageUrlDetail.Original -> "original"
+    ImageUrlDetail.Auto -> "auto"
 }
 
 internal fun ToolChoice?.toResponsesToolChoice(): JsonElement? = when (this) {

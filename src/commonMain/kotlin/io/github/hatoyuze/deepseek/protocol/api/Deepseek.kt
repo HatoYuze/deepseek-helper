@@ -1,6 +1,8 @@
 package io.github.hatoyuze.deepseek.protocol.api
 
+import io.github.hatoyuze.deepseek.protocol.api.entity.ContentPart
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 import io.github.hatoyuze.deepseek.protocol.api.entity.ResponseFormat
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.entity.StopToken
@@ -135,6 +137,16 @@ public interface ChatClient {
      */
     public fun chatStream(userContent: String, hook: SseHook? = null): Flow<ChatChunk>
 
+
+    /**
+     * 发起携带内容块（可含图片）的流式对话补全请求。
+     *
+     * @param content 本条 user 消息的内容（纯文本或内容块数组）
+     * @param hook 可选的实时回调，与 Flow 事件一致
+     * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
+     */
+    public fun chatStream(content: MessageContent, hook: SseHook? = null): Flow<ChatChunk>
+
     /** 中断当前正在进行的流，并中止底层 HTTP 请求 */
     public fun cancelStream()
 
@@ -143,6 +155,15 @@ public interface ChatClient {
 
     /** 获取当前 API Key 的账户余额信息 */
     public suspend fun balance(): UserBalance
+
+    /**
+     * Files API：上传图片一次，之后在请求里用 `file_id` 反复引用。
+     *
+     * 与 wire format（[DeepseekApi]）无关，STANDARD / RESPONSES 两种模式都可用。
+     *
+     * @see DeepseekFiles
+     */
+    public fun files(): DeepseekFiles
 }
 
 /**
@@ -182,6 +203,31 @@ public interface ChatClient {
  *     }
  * }
  * ```
+ *
+ * ## 图片输入
+ *
+ * user 消息的内容可以是「内容块数组」，从而携带图片（[MessageContent] / [ContentPart]）。
+ * 三种官方传图方式都支持：
+ *
+ * ```kotlin
+ * // ① base64 内联（本地文件最简单，单图 ≤ 32 MiB）
+ * ds.chatStream(
+ *     MessageContent.of(
+ *         MessageContent.textPart("这张图片里有什么？"),
+ *         MessageContent.imageDataUrl("image/jpeg", jpegBytes),
+ *     ),
+ * ).collect { ... }
+ *
+ * // ② 外部 URL（可公开访问的 http(s) 链接，≤ 8192 字符）
+ * ds.chatStream(MessageContent.of(MessageContent.image("https://example.com/cat.jpg"))).collect { ... }
+ *
+ * // ③ Files API：上传一次，多请求复用（单图可达 64 MiB）
+ * val uploaded = ds.files().upload("cat.jpg", "image/jpeg")
+ * ds.chatStream(MessageContent.imageFile(uploaded.id)).collect { ... }
+ * ```
+ *
+ * 图片**只能出现在 user 消息**中；非 user 消息携带图片会在发起请求前抛
+ * [IllegalArgumentException]。上传/内联的大小与数量限制见 [MessageContent]。
  *
  * ## 线程模型与并发契约
  *
@@ -352,7 +398,7 @@ public open class Deepseek(
      */
     public open fun findUserMessageIndex(content: String): Int {
         return _messages.indexOfFirst {
-            it.role == Role.User && it.content == content
+            it.role == Role.User && it.content?.asText() == content
         }
     }
 
@@ -493,8 +539,51 @@ public open class Deepseek(
      * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
      */
     public override fun chatStream(userContent: String, hook: SseHook?): Flow<ChatChunk> =
+        streamContentFlow(MessageContent.of(userContent), hook)
+
+    /**
+     * 发起携带内容块（可含图片）的流式对话补全请求。
+     *
+     * 与 [chatStream]`(userContent: String)` 的唯一区别是输入形态：内容块数组才能携带图片。
+     * 追加进历史的消息内容就是传入的 [content]，因此后续 [continueStream] 与工具调用循环
+     * 都会带上它（图片只在 user 消息中有效，见 [MessageContent]）。
+     *
+     * ```kotlin
+     * // base64 内联（本地图片，≤ 32 MiB）
+     * ds.chatStream(
+     *     MessageContent.of(
+     *         MessageContent.textPart("这张图片里有什么？"),
+     *         MessageContent.imageDataUrl("image/jpeg", jpegBytes),
+     *     ),
+     * ).collect { ... }
+     *
+     * // 复用 Files API 上传的图片（推荐：多请求复用、单图可达 64 MiB）
+     * val uploaded = ds.files().upload("cat.jpg", "image/jpeg")
+     * ds.chatStream(MessageContent.imageFile(uploaded.id)).collect { ... }
+     * ```
+     *
+     * @param content 本条 user 消息的内容（纯文本或内容块数组）
+     * @param hook 可选的实时回调，与 Flow 事件一致，先于 Flow 触发
+     * @return 流式响应的 [Flow]，发射 [ChatChunk] 事件
+     */
+    public override fun chatStream(content: MessageContent, hook: SseHook?): Flow<ChatChunk> =
+        streamContentFlow(content, hook)
+
+    /**
+     * 发起携带内容块（可含图片）的流式对话补全请求的便捷重载。
+     *
+     * 等价于 `chatStream(MessageContent.of(parts), hook)`。
+     *
+     * @param parts 本条 user 消息的内容块（至少一个）
+     * @param hook 可选的实时回调，与 Flow 事件一致，先于 Flow 触发
+     */
+    public fun chatStream(parts: List<ContentPart>, hook: SseHook? = null): Flow<ChatChunk> =
+        streamContentFlow(MessageContent.of(parts), hook)
+
+    /** [chatStream] 各内容形态重载的唯一实现（private，不占用公开重载的 JVM 名字） */
+    private fun streamContentFlow(content: MessageContent, hook: SseHook?): Flow<ChatChunk> =
         core.streamFlow { session ->
-            streamLoop(core, _messages, userContent, hook, session)
+            streamLoop(core, _messages, content, hook, session)
         }
 
     /**
@@ -574,6 +663,24 @@ public open class Deepseek(
      * @see UserBalance
      */
     public override suspend fun balance(): UserBalance = core.balance()
+
+    /**
+     * Files API：上传图片一次，之后在请求里用 `file_id` 反复引用。
+     *
+     * ```kotlin
+     * val uploaded = ds.files().upload("cat.jpg", "image/jpeg")
+     * ds.chatStream(MessageContent.imageFile(uploaded.id)).collect { ... }
+     * ds.files().delete(uploaded.id)   // 不再需要时删除
+     * ```
+     *
+     * 与 [DeepseekApi] 的选择无关（Files API 是独立端点，STANDARD / RESPONSES 都可用）：
+     * 上传的文件用 [MessageContent.imageFile] 或 [ContentPart.FilePart] 引用即可。
+     *
+     * @return Files API 客户端（同一个实例上多次调用返回同一个对象）
+     *
+     * @see DeepseekFiles
+     */
+    public override fun files(): DeepseekFiles = core.filesApi
 }
 
 /**

@@ -2,8 +2,11 @@ package io.github.hatoyuze.deepseek.protocol.api.impl
 
 import io.github.hatoyuze.deepseek.protocol.api.ChatChunk
 import io.github.hatoyuze.deepseek.protocol.api.ChatConfig
+import io.github.hatoyuze.deepseek.protocol.api.entity.ContentPart
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
+import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.entity.UserBalance
 import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.protocol.net.HttpHookRegistry
@@ -21,6 +24,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.Serializable
+import io.github.hatoyuze.deepseek.protocol.api.DeepseekJson
 import kotlinx.serialization.json.Json
 
 
@@ -31,6 +35,19 @@ import kotlinx.serialization.json.Json
  * 各后端实现（STANDARD / RESPONSES / FIM）以它作为 baseUrl 参数的默认值。
  */
 internal const val DEFAULT_BASE_URL = "https://api.deepseek.com"
+
+/**
+ * 发起对话补全请求前的统一校验入口。
+ *
+ * 两个后端（STANDARD / RESPONSES）都必须在**装配请求体、发起网络请求之前**调用它：
+ * 校验失败要变成调用方立刻可见的异常，而不是一次注定 400 的往返。
+ *
+ * @throws IllegalArgumentException 非 user 消息携带图片内容块时
+ */
+internal fun List<Message>.requireCompletionsInputAllowed(): List<Message> {
+    requireImagesAllowed()
+    return this
+}
 
 internal interface DeepseekApiBackend {
     suspend fun models(): List<Model>
@@ -43,6 +60,42 @@ internal interface DeepseekApiBackend {
         config: ChatConfig,
         tools: List<ToolDefinition>? = null,
     ): Flow<ChatChunk>
+}
+
+/**
+ * 校验一批消息里没有把图片放在不允许的角色上。
+ *
+ * 官方限制：图片（`image_url` / `file` / `input_image` 内容块）**只能出现在 user 消息中**，
+ * system 或 assistant 消息携带图片会返回 `400`。两个后端在装配请求体前都调用本方法，
+ * 把「必定失败的请求」变成调用方立刻可见的 [IllegalArgumentException]。
+ *
+ * @throws IllegalArgumentException 非 user 消息携带图片内容块时
+ */
+internal fun List<Message>.requireImagesAllowed() {
+    forEach { it.requireImagesAllowed() }
+}
+
+/**
+ * 校验单条消息里没有把图片放在不允许的角色上（见 [requireImagesAllowed]）。
+ *
+ * @throws IllegalArgumentException 非 user 消息携带图片内容块时
+ */
+internal fun Message.requireImagesAllowed() {
+    if (role == Role.User) return
+    require(content.allowsImages()) {
+        "图片只能出现在 user 消息中（当前 role=${role.name.lowercase()}）；" +
+            "system / assistant / tool 消息携带图片会被服务端以 400 拒绝"
+    }
+}
+
+/**
+ * 内容里是否没有图片块（图片只能出现在 user 消息中）。
+ *
+ * 供 `streamLoop` 在把内容当作 user 消息前自检，避免为了校验而先造一条临时 [Message]。
+ */
+internal fun MessageContent?.allowsImages(): Boolean {
+    val parts = (this as? MessageContent.Parts)?.parts ?: return true
+    return parts.none { it is ContentPart.ImagePart || it is ContentPart.FilePart }
 }
 
 
@@ -154,6 +207,8 @@ internal suspend inline fun <reified T> Network.call(
     return json.decodeFromString(body)
 }
 
-internal val json = Json {
-    ignoreUnknownKeys = true
-}
+/**
+ * 库内部使用的 JSON 配置（公开别名为 [io.github.hatoyuze.deepseek.protocol.api.DeepseekJson]，
+ * 便于调用方与库保持完全一致的编解码形状）。
+ */
+internal val json: Json = DeepseekJson

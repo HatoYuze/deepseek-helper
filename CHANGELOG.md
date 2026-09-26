@@ -2,6 +2,197 @@
 
 本仓库遵循语义化版本（[SemVer](https://semver.org/lang/zh-CN/)）。发布记录见下，最新版本在前。
 
+## [0.4.0] - 2026-09-26
+
+> **⚠️ 兼容性提示（升级前请读）**：本版包含一处**二进制不兼容变更**：
+> `Message.content` 的类型由 `String?` 变为 `MessageContent?`（sealed，纯文本或内容块数组）。
+> Kotlin 源码层面大多无需改动（`Message(Role.User, "hi")` 仍可编译，见下），但**必须重新编译**
+> 下游代码；`copy` / `component2` / `getContent` 的 JVM 签名随之变化，取值请改用
+> `MessageContent.asText()`。因此本版按 minor 发布。
+
+> 0.4.0 在 0.3.1 之上加入 DeepSeek 的图像输入能力：对话补全与 `/responses` 都能传图
+> （base64 内联 / 外部 URL / Files API `file_id`），并提供完整的 Files 生命周期管理。
+
+### 新增功能
+
+- **消息内容块（图像输入）**
+  > 新增 `MessageContent`（`Text` / `Parts`）与 `ContentPart`（`TextPart` / `ImagePart` / `FilePart`），
+  > 与官方 wire format 逐字段对应：纯文本序列化为 JSON 字符串，内容块序列化为 JSON 数组。
+  > 便捷工厂：`MessageContent.of(text|parts)`、`textPart`、`image(url, detail)`、`imageFile(fileId)`、
+  > `fileData(dataUrl, filename)`，以及 base64 编码辅助 `imageDataUrl(mime, bytes)` / `dataUrl(mime, bytes)`
+  > （纯 common 实现，基于 `kotlin.io.encoding.Base64`，各平台可用）
+- **三种传图方式全部支持（Chat Completions 与 Responses）**
+  > ① base64 data URL 内联；② 外部 `http(s)` 图片 URL；③ Files API 上传后的 `file_id`。
+  > `/chat/completions` 侧映射为 `text` / `image_url` / `file` 内容块，`/responses` 侧映射为
+  > `input_text` / `input_image`（`file` 块的 `file_data` 落到 `input_image.image_url`）
+- **`chatStream` 的内容形态重载**
+  > `chatStream(content: MessageContent, hook)` 与 `chatStream(parts: List<ContentPart>, hook)`；
+  > 原 `chatStream(userContent: String, hook)` 签名与语义不变，历史里仍是纯文本消息
+- **Files API（`ds.files()`）**
+  > `upload(source|path, mimeType, filename?, options)`、`retrieve(fileId)`、`list(after, limit, order, purpose)`、
+  > `delete(fileId)`；返回 `DeepseekFile` / `FileList` / `FileDeletion`。
+  > 有效期用 `UploadOptions(expiresAfterSeconds)`（`3600..2592000`，即 1 小时到 30 天；不传则永久有效），
+  > 上传时以官方的点号表单字段 `expires_after[anchor]` / `expires_after[seconds]` 发送
+- **图片来源的显式资源管理**
+  > `FileSource`（`Bytes` / `Path`）实现 `AutoCloseable`，可 `use {}` 保证异常/取消时释放；
+  > 路径来源在 JVM / Android 上直接读取，读取失败统一抛 `FileSourceReadException`（不泄漏平台异常）
+- **`DeepseekJson`**
+  > 公开库内部使用的 JSON 配置（`ignoreUnknownKeys = true`、`explicitNulls = false`），
+  > 便于调用方自行构造请求体或落盘历史时得到与库完全一致的形状
+
+### 新增功能（消息构建 DSL）
+
+- **`buildDeepseekMessages { ... }`**：用 `Role.X says content` 声明消息、用 `+` 组合图片与文本，
+  返回可直接使用的 `List<Message>`
+
+  ```kotlin
+  val image = imageOf("photos/cat.jpg")
+  val messages = buildDeepseekMessages {
+      Role.System says "You are a helpful assistant"
+      Role.User says image + "What is its content"
+      Role.Assistance says "This image describes a scene that ..."
+  }
+  ```
+
+- **`imageOf(source)`**：一步把图片变成内容块，来源判定固定且可预测 ——
+  `ByteArray`（MIME 按**魔数**判定，与官方「按内容判断格式」一致）/
+  `FileSource` / `http(s)`、`data:` 字符串（原样透传）/ 其他字符串视为本地路径（读取后内联）；
+  JVM / Android 另有 `File`、`java.net.URI`（含 `file:`）、`InputStream` 扩展重载。
+  另有 `imagePartOf(...)`（返回块本身）与 `imageFileOf(fileId)`（按已上传文件引用，
+  字符串在 `imageOf` 里表示 URL/路径，`file-api-…` 两者都不是，因此单独给入口）
+- **`+` 组合**：`内容 + 内容`、`内容 + "文本"`、`块 + 内容`；顺序即拼接顺序
+  （刻意**不**提供 `"文本" + 内容`：那会被 Kotlin 解析到 stdlib 的 `String.plus(Any?)`，
+  提供一个永远不会被调用的扩展是陷阱，文本在前的写法用 `MessageContent.textPart(...) + ...`）
+- **JVM 图片资源工具**：`imageBytesOfResource("/sample.jpg")`、`fileSourceOfResource(...)`、
+  `imageResourceUrl(...)`，便于把 classpath 里的图片直接喂给 `imageOf` 或 `files().upload`
+
+### 行为变更 / 兼容性
+
+- **请求 hook 收到的请求体会被脱敏**（`HttpHook.onRequest`）：内联图片的 base64 data URL
+  替换为 `data:<mime>;base64,<redacted N chars>`，超长的无空白载荷（大段 base64 / opaque token）
+  替换为 `<redacted N chars>`，整体超过 4096 字符的请求体截断并附 `<truncated N chars>`；
+  脱敏按单趟扫描实现（O(n)），且**保留文档允许的外部 URL**（≤ 8192 字符）不误伤。
+  动机：图片字节属于用户私有内容，而 hook 按约定会被写进应用日志；不脱敏就等于把用户照片
+  写进日志。请求的**结构**（model / messages / 字段名 / 内容块类型）完整保留，
+  因此调试用途不受影响；只依赖「hook 能看到完整原始体」的下游需要改用别的方式取原始流量
+- **上传文件名在 API 边界用白名单校验**：长度 ≤ 512（官方上限），且只允许字母、数字与
+  ` ._-()+[]!~@#&,;=`（中文等 Unicode 字母照常放行），违规抛 `IllegalArgumentException`
+  —— 一次性挡住 CRLF 注入、引号破坏、路径分隔符外泄，并让 multipart 分片头无需任何转义；
+  `upload(path, ...)` 的默认文件名对 `/` 与 Windows `\` 都兼容（旧写法会把整条 Windows 路径
+  当文件名发给服务端，而 POSIX 上 `\` 是合法文件名字符，因此只在盘符形态下才当分隔符）
+- **multipart 分片头不再自己拼 `Content-Disposition`**：ktor 会为每个分片加上
+  `form-data; name=<字段名>`，再传一个完整 disposition 会得到
+  `form-data; name=file; file; name=file; filename=...`（裸参数 + name 重复），
+  严格解析器（Go `mime/multipart`、busboy）会拒绝；现在只补 `filename=` 参数，
+  测试逐字断言 `Content-Disposition: form-data; name=file; filename=cat.jpg`
+- 序列化失败统一为 `SerializationException`：内容块的不变量（`image_url` / `file_id` 互斥等）
+  与字段类型不符在 `KSerializer` 边界被翻译，`catch (SerializationException)` 能兜住全部坏 JSON
+- multipart 响应体读取不再吞掉 `CancellationException`（取消继续传播，只把「读不出响应体」
+  降级为 hook 无内容）
+- **新增本地 fail-fast**（把注定失败的请求挡在本地，而不是等一个 400）：
+  - `MessageContent.image(url)`：只接受 `http(s)` 或 `data:`，外部 URL ≤ 8192 字符
+  - `MessageContent.dataUrl/imageDataUrl`：单图 ≤ 32 MiB（`MAX_INLINE_IMAGE_BYTES`）
+  - 两者都提供公开常量，便于调用方自行比对
+- `MessageContent.asText()` 改为单趟扫描（每次请求的每条消息都会调用它，原先会为每条消息
+  分配一个中间列表）；Responses 输入转换不再重复做一次角色校验（改为在转换入口扫一次）
+- `Message.content` 由 `String?` 变为 `MessageContent?`：
+  - 构造：`Message(Role.User, "hi")` 这类**字符串字面量**仍可编译（伴生对象 `invoke` 转换）；
+    变量则要显式写 `MessageContent.of(text)`（Kotlin 的隐式转换只对字面量生效）
+  - 读取：`message.content == "hi"` 不再成立，请用 `message.content?.asText()`；
+    `findUserMessageIndex(text)` 已内部改用 `asText()`，语义不变
+- 请求体不再写出值为 `null` 的字段（`explicitNulls = false`）：`content` 为 `null` 的 assistant
+  消息不再发出 `"content": null`。这与 0.3.x 实际发出的形状一致，服务端无差异；解码不受影响
+- 图片**只能出现在 user 消息**中：非 user 消息携带图片时，两个后端都会在装配请求体、发起网络
+  请求**之前**抛 `IllegalArgumentException`（官方对这类请求返回 `400`，库改为本地 fail-fast）
+- **按 `file_id` 引用图片时发出的是 `file` 内容块**（而不是 `image_url` 块）：
+  `MessageContent.imageFile(fileId)` 与 `ContentPart.ImagePart(fileId = ...)` 序列化为
+  `{"type":"file","file_id":"file-api-..."}`。写成
+  `{"type":"image_url","image_url":{"file_id":...}}` 会被真实接口以
+  `400 invalid_request_error: missing field url` 拒绝 —— 这是用真实 key 跑线上用例时发现并修掉的；
+  带来的可见差异是「file_id 形态解码回来是等价的 `ContentPart.FilePart`」
+- `ContentPart.ImagePart` 的 `imageUrl` 与 `fileId` 互斥且必须二选一；`ContentPart.FilePart` 的
+  `fileId` 与 `fileData` 互斥且必须二选一；`MessageContent.Parts` 不允许空列表 —— 均在构造期抛错
+- 未改动 `ChatClient` 的 `chatStream(String, SseHook?)`、`ChatConfig`、`ToolCallHost` 与管道插件语义
+
+### 已知限制
+
+- **内联图片与工具调用循环的内存开销**：内联 base64 会留在对话历史里，而每一轮工具循环都会把
+  整段历史重新序列化一次。实测 32 MiB 图片 → 42.7 MiB base64 字符串，单次请求的 JSON 编码
+  约分配 300 MiB（含 CJK 文本时约 390 MiB），Ktor 再复制一份约 90 MiB。因此：**大图、或需要在
+  多轮请求中复用的图片，请用 `files().upload(...)` + `file_id`**；内联时请在请求之间复用同一个
+  `MessageContent` 实例，不要在循环里反复编码。库不代为限制请求体总量
+- **`cancelStream()` 不覆盖文件操作**：它取消的是对话流；上传/查询请取消调用它们的协程
+- **`FileSource.readBytes()` 是同步且不可中断的**：在 `upload` 里于调用方上下文执行，
+  请显式切到 IO 调度器，并自行限制并发上传数（每个并发上传都会在堆上持有一份完整图片）
+- `FileSource.Path` 在 **Native（iOS / macOS / Linux / Windows）** 上不受支持：Kotlin/Native 的
+  metadata/commonizer 拒绝在 actual 文件里使用平台数值类型（`ftell` / `fread`），
+  调用 `readBytes()` 会抛 `UnsupportedOperationException`，请改用 `FileSource.Bytes`；
+  JS / Wasm 平台同理（没有本地文件系统）
+- 图片的体积与数量限制（单图 base64/URL ≤ 32 MiB、`file_id` ≤ 64 MiB、请求体 ≤ 48 MiB、
+  单请求 ≤ 600 张、外部 URL ≤ 8192 字符）只写进 KDoc / README，库侧不代为校验
+- 输出侧不含图片：`ChatChunk` / `ChatResponse` 仍只有文本与 `reasoning_content`
+
+### API 治理
+
+- 新增公共类型：`MessageContent`、`ContentPart`、`ImageUrlDetail`、`DeepseekFiles`、
+  `DeepseekFile`、`FileList`、`FileDeletion`、`FilePurpose`、`FileOrder`、`UploadOptions`、
+  `FileSource`、`FileSourceReadException`、`openFileSource`、`DeepseekJson`
+- 新增公共成员：`ChatClient.chatStream(MessageContent, SseHook?)`、`ChatClient.files()`；
+  `Deepseek` / `StatelessDeepseek` 各增 `chatStream(parts, hook)` 重载
+  （`StatelessDeepseek` 上因 JVM 擦除与 `chatStream(List<Message>)` 同名，标注
+  `@JvmName("chatStreamParts")`；`Deepseek` 上没有同名擦除签名，故保持覆写友好的 `open`，
+  JVM 名字仍是 `chatStream`。两者从 Kotlin 调用的名字完全一致，只有直接写 JVM 字节码的下游会看到差异）
+- `api/jvm` 与 `api/android` 基线已按 0.4.0 重新生成；未新增第三方依赖
+  （base64 来自 stdlib，multipart 来自既有 `ktor-client-core`）
+
+### 测试
+
+- 内容块 wire format：纯文本 → 字符串、空串、内容块 → 数组、`image_url` 嵌套对象、
+  `detail` 省略规则、`file_id` / `file_data` + `filename`、往返等价
+- 非法输入：未知 `type`、缺 `image_url` 对象、`url` 与 `file_id` 同时出现或都缺失、
+  `file_id` / `file_data` 互斥、空内容块列表
+- Responses 映射：`input_text` / `input_image`（`file_id` 形态不下发 `detail`）、
+  多块顺序保持、system 消息不携带文本时不作为 `instructions`
+- 客户端：三种 `chatStream` 重载写入历史的内容一致、无状态重载不落状态、
+  `findUserMessageIndex` 命中文本块、非 user 消息带图**一次 HTTP 请求都不发**
+- Files API（MockEngine 逐字段断言）：multipart 的 `purpose` / 文件分片头（`name` + `filename` +
+  `Content-Type`）/ 原始字节、`expires_after[anchor]` 与 `expires_after[seconds]`、
+  游标分页 query、`DELETE /files/:id`、错误状态映射、`limit` 越界与空白 `fileId` 的本地 fail-fast
+- JVM：`FileSource.Path` 真实文件读取、可重复读取、缺失文件与目录抛 `FileSourceReadException`、
+  `use {}` 在异常路径上释放
+- 脱敏与文件名边界：data URL 替换、超长不透明载荷替换、超长体截断、普通文本原样通过、
+  日志拍平控制字符、Windows/Unix 路径的默认文件名推导、危险文件名与超长文件名被拒
+  （异常消息不回显被注入的内容）
+- 图片地址与体积的本地 fail-fast：`http(s)` / `data:` 之外被拒、外部 URL 超长被拒、
+  data URL 不受 8192 限制、内联字节超 32 MiB 被拒；`asText()` 单趟实现在
+  「单文本块 / 文本夹图片 / 连续多文本块 / 全空」下的语义
+- **夹具位置**：测试图片放在 `src/jvmTest/resources/sample.jpg`（随测试 classpath 提供，
+  不再放在项目根目录）
+- **DSL 契约**（`MessageDslTest`，21 个用例）：需求里给出的样例写法逐行固化、
+  `says` 的返回值不影响追加、`build()` 返回快照、`+` 的四种组合与顺序、
+  `imageOf` 的每种来源（含 JPEG/PNG/GIF/WebP 魔数判定、本地路径、`FileSource` 不被关闭、
+  `File`/`URI`/`InputStream`、不支持类型与空白地址的报错信息）、资源工具与缺失资源的明确报错
+- **真实图片（`src/jvmTest/resources/sample.jpg`，960×788 JPEG）的离线用例**
+  （`SampleImageInputTest`，CI 无密钥也跑）：
+  - 经 `FileSource` 平台实现读取 → 与直接读取逐字节一致；base64 编码 → 解码回读无损
+  - Files API 上传的 multipart 请求体：分片头逐字正确、`Content-Type`、以及正文里能找到
+    JPEG 的 `FF D8 FF` 标记（证明二进制没被转义或截断）
+  - 真实 chat 请求：内容块形状正确，且 hook 看到的请求体**不含**图片数据（脱敏端到端）
+  - 真实文件名经校验通过、路径推导出干净的默认文件名（含 Windows 路径）
+- **真实读图的线上用例**（`ImageInputLiveTest`，需要 `DEEPSEEK_API_KEY`，缺失时自动跳过）：
+  base64 内联提问与 Files API `file_id` 复用（上传 → 两次引用 → 删除）。
+  已用真实 key 验证通过：内联用例 `prompt=485 / completion=250` tokens，
+  `file_id` 用例上传 399503 字节并复用同一 `file_id` 提问两次、随后删除；两次都得到了
+  对图片内容的正确描述（而不是「我看不到图片」）
+  该用例的 `maxTokens` 放宽到 4096：读图会额外消耗图像 token，且模型通常先描述再回答，
+  按纯文本问答的 128～1024 会得到 `finish_reason=length` 的半截回复
+- **修复测试发现失效**：`CliClient.kt` 的线上套件与新增的线上用例都用了
+  `companion object` + `@JvmStatic @BeforeClass`，Gradle 的 JUnit4 扫描会因此**整类丢弃**
+  （`No tests found for given includes`）—— 也就是说这些线上用例此前从未被执行过。
+  改为实例级 `@Before` + `assumeTrue` 后恢复正常：无密钥时 17 个线上用例显示为 skipped
+  （而不是静默消失）
+- 既有 101 处 `Message(...)` 调用点按新类型迁移，全部历史 / 并发 / 重压测试保持通过
+
 ## [0.3.1] - 2026-09-26
 
 > **⚠️ 兼容性提示（升级前请读）**：本版包含两处**运行期行为变更**（不是签名变更）：

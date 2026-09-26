@@ -1,11 +1,15 @@
 package io.github.hatoyuze.deepseek.protocol.api
 
+import io.github.hatoyuze.deepseek.protocol.api.entity.ContentPart
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
+import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
 import io.github.hatoyuze.deepseek.protocol.api.impl.DEFAULT_BASE_URL
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekApiBackend
+import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekFilesApiImpl
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekFimApi
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekFimApiImpl
+import io.github.hatoyuze.deepseek.protocol.api.impl.requireImagesAllowed
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekResponsesApiImpl
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekStandardApiImpl
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
@@ -43,6 +47,7 @@ internal class DeepseekCore(
     private val singleSession: Boolean = false,
     backend: DeepseekApiBackend? = null,
     fimApi: DeepseekFimApi? = null,
+    filesApi: DeepseekFiles? = null,
 ) {
 
     /** 按 [api] 选择对应的 wire format 后端实现 */
@@ -54,6 +59,17 @@ internal class DeepseekCore(
     /** FIM 补全 API 的网络后端 */
     val fimApi: DeepseekFimApi = fimApi ?: DeepseekFimApiImpl(apiKey, sharingPool, baseUrl)
 
+    /**
+     * Files API 后端（上传/查询/列出/删除）。
+     *
+     * 与 [api] 无关：Files API 是独立端点，STANDARD 与 RESPONSES 两种 wire format 下都可用。
+     *
+     * **不可变**：替换只通过构造参数完成（测试注入假实现），因此不存在「一个协程正在用旧实例、
+     * 另一个已经拿到新实例」的窗口，也不需要可见性修饰符。`DeepseekFilesApiImpl` 本身无状态，
+     * 同一实例可被并发使用。
+     */
+    val filesApi: DeepseekFiles = filesApi ?: DeepseekFilesApiImpl(apiKey, sharingPool, baseUrl)
+
     /** 工具调用宿主，设置后 [streamLoop] 自动执行模型请求的工具 */
     var toolHost: ToolCallHost? = null
 
@@ -61,7 +77,7 @@ internal class DeepseekCore(
     var executionContext: ToolExecutionContext = ToolExecutionContext("", "")
 
     /** 系统提示词对应的初始 system 消息；未设置 prompt 时为 `null` */
-    val systemPromptMessage: Message? = prompt?.let { Message(Role.System, it) }
+    val systemPromptMessage: Message? = prompt?.let { Message(Role.System, MessageContent.of(it)) }
 
     /** 活跃流会话快照；写入时通过 [sessionLock] 保护 */
     @Volatile
@@ -170,7 +186,7 @@ internal class DeepseekCore(
                 history.add(
                     Message(
                         role = Role.Tool,
-                        content = result.content,
+                        content = MessageContent.of(result.content),
                         name = DEEPSEEK_WEB_SEARCH_TOOL,
                     )
                 )
@@ -178,7 +194,7 @@ internal class DeepseekCore(
                 history.add(
                     Message(
                         role = Role.Tool,
-                        content = result.content,
+                        content = MessageContent.of(result.content),
                         toolCallId = call.id,
                     )
                 )
@@ -206,7 +222,7 @@ internal class DeepseekCore(
 internal suspend fun FlowCollector<ChatChunk>.streamLoop(
     core: DeepseekCore,
     history: MutableList<Message>,
-    userContent: String?,
+    userContent: MessageContent?,
     hook: SseHook?,
     session: StreamSession,
 ) {
@@ -214,6 +230,9 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
     // 避免误删并发写入或历史被整体替换后新表上的、并不属于本轮的消息
     val ownMessages = mutableListOf<Message>()
     if (userContent != null) {
+        // 内容块（可含图片）原样作为 user 消息入历史。「图片只能在 user 消息中」的限制针对的是
+        // 历史里**别人的**消息，由两个后端在请求装配前统一校验（requireImagesAllowed）；本轮输入
+        // 本身就是 user 消息，无需自检
         val userMessage = Message(Role.User, content = userContent)
         history.add(userMessage)
         ownMessages += userMessage
@@ -309,7 +328,7 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
         emit(done)
 
         if (contentBuilder.isNotEmpty()) {
-            val assistantMessage = Message(Role.Assistance, content = contentBuilder.toString())
+            val assistantMessage = Message(Role.Assistance, content = MessageContent.of(contentBuilder.toString()))
             history.add(assistantMessage)
             ownMessages += assistantMessage
         }
