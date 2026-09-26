@@ -17,6 +17,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.readRemaining
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.readByteArray
@@ -83,6 +90,20 @@ class FilesApiTest {
      * multipart 内容（[OutgoingContent.WriteChannelContent]）需要真的写入一个 channel 才会生成
      * 字节流 —— 这正是「断言文件名与文件内容确实进了请求体」的前提；无请求体的请求返回空串。
      */
+    private suspend fun OutgoingContent.readBytesOrEmpty(): ByteArray = when (this) {
+        is OutgoingContent.NoContent -> ByteArray(0)
+        is OutgoingContent.ByteArrayContent -> bytes()
+        is OutgoingContent.WriteChannelContent -> {
+            val channel = ByteChannel(autoFlush = true)
+            writeTo(channel)
+            channel.flushAndClose()
+            channel.readRemaining().readByteArray()
+        }
+
+        is OutgoingContent.ReadChannelContent -> readFrom().readRemaining().readByteArray()
+        else -> error("unexpected request body type: ${this::class}")
+    }
+
     private suspend fun OutgoingContent.readBodyAsString(): String = when (this) {
         is OutgoingContent.NoContent -> ""
         is OutgoingContent.ByteArrayContent -> bytes().decodeToString()
@@ -346,6 +367,103 @@ class FilesApiTest {
     fun `files returns the same instance on repeated calls`() {
         val ds = Deepseek("sk-test", sharingPool = recordingPool(mutableListOf()))
         assertTrue(ds.files() === ds.files(), "同一客户端应复用同一个 Files API 实例")
+    }
+
+    /**
+     * 共享模型：`DeepseekFilesApiImpl` 自身无状态，因此**同一个实例**应能承接并发调用，
+     * 每个请求各带自己的 multipart 体，互不串味。
+     *
+     * 这条用例是并发契约的回归保护：只要有人在实现里加上「当前上传」这类字段，它就会失败。
+     */
+    @Test
+    fun `concurrent uploads on one instance stay isolated`() = runTest {
+        val bodies = mutableListOf<ByteArray>()
+        val bodiesLock = Mutex()
+        val pool = DeepseekHttpClientPool(
+            factory = DeepseekHttpClientFactory {
+                HttpClient(
+                    MockEngine { request ->
+                        val bytes = request.body.readBytesOrEmpty()
+                        bodiesLock.withLock { bodies.add(bytes) }
+                        respond(
+                            content =
+                            """{"id":"file-api-1","object":"file","bytes":1,"created_at":1,""" +
+                                """"filename":"x","purpose":"user_data"}""",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                        )
+                    },
+                )
+            },
+        )
+        val files = Deepseek("sk-test", sharingPool = pool).files()
+
+        // 20 个并发上传，每个 payload 互不相同，通过 multipart 边界识别归属
+        val payloads = (0 until 20).map { "payload-$it-${"x".repeat(64)}" }
+        val results = coroutineScope {
+            payloads.map { payload ->
+                async(Dispatchers.Default) {
+                    files.upload(
+                        FileSource.Bytes(payload.encodeToByteArray()),
+                        mimeType = "image/jpeg",
+                        filename = "f-${payload.substringAfter("payload-").substringBefore("-")}.jpg",
+                    )
+                }
+            }.awaitAll()
+        }
+
+        assertEquals(message = "全部并发上传都应成功", expected = 20, actual = results.size)
+        assertEquals(message = "应恰好发出 20 个请求", expected = 20, actual = bodies.size)
+        // 每个请求体只能包含它自己那次的 payload 与文件名
+        payloads.forEachIndexed { index, payload ->
+            val matching = bodies.filter { it.decodeToString().contains(payload) }
+            assertEquals(
+                message = "payload #$index 应恰好出现在一个请求体里（无串味、无丢失）",
+                expected = 1,
+                actual = matching.size,
+            )
+            assertTrue(
+                message = "请求体应带自己的文件名：${matching.single().decodeToString().take(160)}",
+                actual = matching.single().decodeToString().contains("name=file; filename=f-$index.jpg"),
+            )
+        }
+    }
+
+    /** 并发调用不应互相阻塞成串行：20 个上传的挂钟耗时必须远小于「串行 20 × 单次延迟」 */
+    @Test
+    fun `concurrent calls do not serialize behind one another`() = runTest {
+        var concurrent = 0
+        var maxConcurrent = 0
+        val counterLock = Mutex()
+        val pool = DeepseekHttpClientPool(
+            factory = DeepseekHttpClientFactory {
+                HttpClient(
+                    MockEngine {
+                        val now = counterLock.withLock { ++concurrent }
+                        maxConcurrent = maxOf(maxConcurrent, now)
+                        delay(50)
+                        counterLock.withLock { concurrent-- }
+                        respond(
+                            content =
+                            """{"id":"file-api-1","object":"file","bytes":1,"created_at":1,""" +
+                                """"filename":"x","purpose":"user_data"}""",
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                        )
+                    },
+                )
+            },
+        )
+        val files = Deepseek("sk-test", sharingPool = pool).files()
+
+        coroutineScope {
+            (0 until 8).map { async(Dispatchers.Default) { files.retrieve("file-api-$it") } }.awaitAll()
+        }
+
+        assertTrue(
+            message = "8 个请求应真正并发（实测最大并发 $maxConcurrent），而不是被实例级锁串行化",
+            actual = maxConcurrent > 1,
+        )
     }
 
     @Test
