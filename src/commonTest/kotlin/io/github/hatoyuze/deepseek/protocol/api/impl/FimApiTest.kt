@@ -36,12 +36,12 @@ class FimApiTest {
             prompt = "def add(a, b):",
             suffix = "    return a + b",
             echo = true,
-            model = Model.Pro,
+            model = Model.Flash,
             config = config,
         )
         val obj = json.parseToJsonElement(json.encodeToString(FimRequest.serializer(), request)).jsonObject
 
-        assertEquals("deepseek-v4-pro", request.model)
+        assertEquals("deepseek-flash", request.model)
         assertEquals("def add(a, b):", request.prompt)
         assertEquals("    return a + b", request.suffix)
         assertEquals(true, request.echo)
@@ -72,7 +72,7 @@ class FimApiTest {
     fun `deserializes FIM text delta`() {
         val raw = """
             {"id":"cmpl-fim-1","object":"text_completion","created":1710000000,
-             "model":"deepseek-v4-pro",
+             "model":"deepseek-flash",
              "choices":[{"index":0,"text":"    return a + b","finish_reason":null,"logprobs":null}]}
         """.trimIndent()
 
@@ -89,7 +89,7 @@ class FimApiTest {
     fun `deserializes FIM final chunk with usage`() {
         val raw = """
             {"id":"cmpl-fim-2","object":"text_completion","created":1710000001,
-             "model":"deepseek-v4-pro","choices":[],
+             "model":"deepseek-flash","choices":[],
              "usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30,
                       "prompt_cache_hit_tokens":5,"prompt_cache_miss_tokens":5,
                       "completion_tokens_details":{"reasoning_tokens":8}}}

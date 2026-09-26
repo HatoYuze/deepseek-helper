@@ -40,7 +40,7 @@ class StatelessDeepseekTest {
         }
 
         assertEquals("sk-test-key", ds.apiKey)
-        assertEquals("deepseek-v4-flash", ds.resolvedModel.id)
+        assertEquals("deepseek-flash", ds.resolvedModel.id)
         assertEquals("You are a stateless assistant", ds.systemPromptMessage?.content?.asText())
         assertEquals(100, ds.config.maxTokens)
         assertEquals(0.5, ds.config.temperature)
@@ -59,13 +59,15 @@ class StatelessDeepseekTest {
     }
 
     @Test
-    fun `modelForFim defaults to Pro and can be overridden`() {
+    fun `modelForFim defaults to Flash and can be overridden`() {
         val ds = statelessDeepseek("sk-test-key") { }
 
-        assertEquals(Model.Pro, ds.modelForFim)
-
-        ds.modelForFim = Model.Flash
+        // v4-pro 退役后，FIM 默认模型与水线模型一致
         assertEquals(Model.Flash, ds.modelForFim)
+
+        val legacy = Model("model", "deepseek", "deepseek-v4-pro")
+        ds.modelForFim = legacy
+        assertEquals(legacy, ds.modelForFim)
     }
 
     @Test
@@ -95,7 +97,7 @@ class StatelessDeepseekTest {
 
         assertTrue(result.isNotEmpty(), "Expected handleToolCalls to execute the tool")
         assertEquals(2, history.size, "Expected assistant + tool message in provided history")
-        assertEquals(Role.Assistance, history[0].role)
+        assertEquals(Role.Assistant, history[0].role)
         assertEquals(Role.Tool, history[1].role)
         assertEquals("call_1", history[1].toolCallId)
     }

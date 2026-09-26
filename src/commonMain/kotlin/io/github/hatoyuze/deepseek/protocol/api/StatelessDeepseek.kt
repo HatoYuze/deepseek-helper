@@ -100,7 +100,7 @@ public class StatelessDeepseek(
     public override val resolvedModel: Model get() = core.resolvedModel
 
     /**
-     * FIM 补全使用的模型，默认 [Model.Pro]。
+     * FIM 补全使用的模型，默认 [Model.Flash]。
      *
      * **Beta**：见 [fimStream]。
      */

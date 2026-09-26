@@ -7,9 +7,9 @@ import kotlin.test.assertEquals
 class ModelDefaultsTest {
 
     @Test
-    fun `hardcoded flash and pro models`() {
-        assertEquals("deepseek-v4-flash", Model.Flash.id)
-        assertEquals("deepseek-v4-pro", Model.Pro.id)
+    fun `hardcoded model is deepseek-flash`() {
+        // v4 名字已退役：库内只保留官方当前推荐的 deepseek-flash
+        assertEquals("deepseek-flash", Model.Flash.id)
         assertEquals("model", Model.Flash.obj)
         assertEquals("deepseek", Model.Flash.owner)
     }
@@ -22,10 +22,14 @@ class ModelDefaultsTest {
     }
 
     @Test
-    fun `DSL selects flash pro and custom`() {
+    fun `DSL selects flash and custom`() {
         assertEquals(Model.Flash, deepseek("k") { model { flash() } }.resolvedModel)
-        assertEquals(Model.Pro, deepseek("k") { model { pro() } }.resolvedModel)
         assertEquals("my-model", deepseek("k") { model { custom("my-model") } }.resolvedModel.id)
+        // 退役名字仍可显式发送（服务端把它路由到 Flash）
+        assertEquals(
+            "deepseek-v4-pro",
+            deepseek("k") { model { custom("deepseek-v4-pro") } }.resolvedModel.id,
+        )
     }
 
     @Test

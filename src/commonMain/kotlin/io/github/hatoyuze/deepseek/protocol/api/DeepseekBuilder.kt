@@ -140,12 +140,11 @@ public class DeepseekBuilder {
      * 指定使用的模型。
      *
      * ```kotlin
-     * model { flash() }            // deepseek-v4-flash
-     * model { pro() }              // deepseek-v4-pro
-     * model { custom("my-model") } // 自定义 model id
+     * model { flash() }            // deepseek-flash（默认，官方当前唯一推荐的模型）
+     * model { custom("my-model") } // 自定义 model id（含已退役的 deepseek-v4-* 别名）
      * ```
      *
-     * 不调用此方法时，[Deepseek] 使用库内硬编码的 [Model.Flash]（deepseek-v4-flash），不会发起网络请求。
+     * 不调用此方法时，[Deepseek] 使用库内硬编码的 [Model.Flash]（deepseek-flash），不会发起网络请求。
      *
      * @param block 模型选择 DSL，receiver 为 [ModelSelector]
      */
@@ -260,19 +259,15 @@ public class DeepseekBuilder {
  * 在 [DeepseekBuilder.model] DSL 中选择模型。
  *
  * ```kotlin
- * model { flash() }            // deepseek-v4-flash
- * model { pro() }              // deepseek-v4-pro
+ * model { flash() }            // deepseek-flash（默认）
  * model { custom("my-model") } // 自定义
  * ```
  */
 public class ModelSelector {
     internal var model: Model? = null
 
-    /** 使用 deepseek-v4-flash（默认模型，库内硬编码） */
+    /** 使用 deepseek-flash（默认模型，库内硬编码，也是当前唯一推荐的模型） */
     public fun flash() { model = Model.Flash }
-
-    /** 使用 deepseek-v4-pro（库内硬编码） */
-    public fun pro() { model = Model.Pro }
 
     /**
      * 使用自定义模型 ID。

@@ -307,7 +307,6 @@ public final class io/github/hatoyuze/deepseek/protocol/api/ModelSelector {
 	public fun <init> ()V
 	public final fun custom (Ljava/lang/String;)V
 	public final fun flash ()V
-	public final fun pro ()V
 }
 
 public abstract interface class io/github/hatoyuze/deepseek/protocol/api/SseHook {
@@ -828,9 +827,7 @@ public final synthetic class io/github/hatoyuze/deepseek/protocol/api/entity/Mod
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Model$Companion {
 	public final fun flash (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
 	public final fun getFlash ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
-	public final fun getPro ()Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
 	public final fun ofModel (Ljava/lang/String;Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
-	public final fun pro (Ljava/util/List;)Lio/github/hatoyuze/deepseek/protocol/api/entity/Model;
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
@@ -861,7 +858,7 @@ public final class io/github/hatoyuze/deepseek/protocol/api/entity/ResponseForma
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Role : java/lang/Enum {
-	public static final field Assistance Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
+	public static final field Assistant Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
 	public static final field Companion Lio/github/hatoyuze/deepseek/protocol/api/entity/Role$Companion;
 	public static final field System Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;
 	public static final field Tool Lio/github/hatoyuze/deepseek/protocol/api/entity/Role;

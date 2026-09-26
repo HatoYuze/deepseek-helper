@@ -245,7 +245,7 @@ class DeepSeekApiTest {
     fun `weather tool is called by model`() = runBlocking {
         withTimeout(90.seconds) {
             val ds = deepseek(apiKey) {
-                model { pro() }
+                model { flash() }
                 config {
                     maxTokens = 256
                     temperature = 0.0
@@ -293,7 +293,7 @@ class DeepSeekApiTest {
             val calledTools = mutableListOf<String>()
 
             val ds = deepseek(apiKey) {
-                model { pro() }
+                model { flash() }
                 config {
                     maxTokens = 256
                     temperature = 0.0
@@ -347,7 +347,7 @@ class DeepSeekApiTest {
     fun `calculator tool with numeric params`() = runBlocking {
         withTimeout(90.seconds) {
             val ds = deepseek(apiKey) {
-                model { pro() }
+                model { flash() }
                 config {
                     maxTokens = 256
                     temperature = 0.0
@@ -404,7 +404,7 @@ class DeepSeekApiTest {
     fun `fim stream returns a completion`() = runBlocking {
         withTimeout(90.seconds) {
             val ds = deepseek(apiKey) {
-                model { pro() }
+                model { flash() }
             }
 
             val response = ds.fimStream(
@@ -443,7 +443,7 @@ class DeepSeekApiTest {
             ds.replaceHistory(
                 listOf(
                     Message(Role.User, MessageContent.of("请记住：我最喜欢的数字是 2748。")),
-                    Message(Role.Assistance, MessageContent.of("好的，我记住了：2748。")),
+                    Message(Role.Assistant, MessageContent.of("好的，我记住了：2748。")),
                 ),
             )
 
@@ -476,7 +476,7 @@ class DeepSeekApiTest {
             val persisted = listOf(
                 Message(Role.System, MessageContent.of("你是一个精确的助手，回答简短。")),
                 Message(Role.User, MessageContent.of("请记住：本次会话的暗号是 ORANGE-42。")),
-                Message(Role.Assistance, MessageContent.of("收到，暗号是 ORANGE-42。")),
+                Message(Role.Assistant, MessageContent.of("收到，暗号是 ORANGE-42。")),
                 Message(Role.User, MessageContent.of("本次会话的暗号是什么？只回答暗号。")),
             )
 

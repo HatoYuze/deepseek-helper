@@ -221,7 +221,7 @@ class ToolDslTest {
         val dsWithModel = deepseek("sk-test-key") {
             model { flash() }
         }
-        assertEquals("deepseek-v4-flash", dsWithModel.resolvedModel.id)
+        assertEquals("deepseek-flash", dsWithModel.resolvedModel.id)
 
         val dsCustom = deepseek("sk-test-key") {
             model { custom("my-model") }
