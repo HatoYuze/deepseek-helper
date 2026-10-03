@@ -21,14 +21,21 @@ class DsmlEnvelopeParserLimitsTest {
     /**
      * 开启标签迟迟不闭合时必须封顶。
      *
-     * 未封顶时 `parseOpenTag` 每次都从头解析整个标签，逐字符喂 200 KB 是 O(n²)（约 10^10 次比较，
-     * 分钟级）；封顶后只解析到 4 KiB 就 fail-closed，因此这里同时断言耗时上界。
+     * 未封顶时 `parseOpenTag` 每次都从头解析整个标签，逐字符喂入的代价是标签长度的平方（200 KB 逐字符
+     * 约 10^10 次比较、分钟级）；封顶后只解析到 4 KiB 就 fail-closed，因此这里同时断言耗时上界。
+     *
+     * 喂法刻意分两段：**逐字符只喂到上限的两倍**（这正是曾经的平方路径，也是唯一需要逐字符的部分），
+     * 其余一次性按块喂——否则这个用例在 JS/Wasm 测试里要跑几万次 `append`，在 CI 慢机上会拖到
+     * 测试进程超时（实测过一次：JS 测试任务 3.6 秒内无声失败）。超限之后无论怎么喂都该是 O(1)，
+     * 分块喂同样能守住「不再随长度增长」这条契约。
      */
     @Test
     fun `unterminated open tag is capped instead of re-parsed quadratically`() {
         val parser = DsmlEnvelopeParser()
-        // 容器开着，随后是一个永远不闭合的 invoke 标签（20 万个字符）
-        val hostile = "\n" + MARKER + " invoke name=\"" + "a".repeat(200_000)
+        // 容器开着，随后是一个永远不闭合的 invoke 标签（50 KB，远超 4 KiB 的标签上限）
+        val tagHead = "\n" + MARKER + " invoke name=\""
+        val tagTail = "a".repeat(50_000)
+        val charByCharWindow = 2 * 4096
 
         val elapsed = measureTime {
             val visible = StringBuilder()
@@ -44,7 +51,13 @@ class DsmlEnvelopeParserLimitsTest {
             }
 
             collect(parser.append(MARKER + " calls>"))
-            for (char in hostile) collect(parser.append(char.toString()))
+            for (char in tagHead) collect(parser.append(char.toString()))
+            for (char in tagTail.take(charByCharWindow - tagHead.length)) {
+                collect(parser.append(char.toString()))
+            }
+            tagTail.drop(charByCharWindow - tagHead.length).chunked(4096).forEach { chunk ->
+                collect(parser.append(chunk))
+            }
             collect(parser.finish())
 
             assertTrue(reasons.contains("tag-too-long"), "必须按坏结构 fail-closed，实际：$reasons")
