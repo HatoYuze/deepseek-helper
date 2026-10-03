@@ -532,6 +532,64 @@ flowchart TD
 >
 </details>
 
+#### 上游工具调用语法泄漏（内部信封）
+
+官方文档只承认**结构化**的工具调用：请求带 `tools` 数组，响应在 `message.tool_calls` 里回传调用。
+但线上存在一类上游缺陷：服务端偶发把**模型内部的工具调用语法**（下称「信封」——形如
+`｜｜DSML｜｜` 定界符包裹的 XML-ish 片段）当作**正文**下发：`finish_reason=stop`、`tool_calls` 为
+`null`，调用根本没发生，用户看到一串机器标记。
+
+已知触发条件（公开 issue，各有最小复现）：
+
+- [DeepSeek-V3#1678](https://github.com/deepseek-ai/DeepSeek-V3/issues/1678)：**确定性**——历史里带着
+  `assistant.tool_calls` 与 `role=tool`，而本次请求**没有发送 `tools`**（工具通道关闭）。该 issue 的
+  对照实验很干净：58 个工具在场时 976 次 0 泄漏，工具列表清空后 4/4 泄漏。
+- [DeepSeek-V3#1244](https://github.com/deepseek-ai/DeepSeek-V3/issues/1244)：**间歇性**——`tools` 在场
+  也会偶发把调用写成正文。
+- [DeepSeek-V3#1668](https://github.com/deepseek-ai/DeepSeek-V3/issues/1668)：网页版同样会泄漏该信封。
+
+本库的处理（无需配置，三层）：
+
+1. **请求侧不变量**：装配请求前检查「历史里有 tool 轮次、但本次不会发送 `tools`」，命中即记
+   `ERROR`（logger 名 `DeepseekCore`）。库补不出工具定义（没有 host 就没有 schema），**回放带工具
+   的历史时请装配同样的 `ToolCallHost`**。
+2. **接收侧兜底**：正文与思考内容里的信封一律**不当正文**。正文里能完整解析、工具名在本次 `tools` 里、
+   参数是合法 JSON 时，恢复成 `ChatChunk.ToolCallRequest` 照常进入 `ToolCallHost` 管道执行
+   （鉴权 / 校验 / 重试 / 超时插件一个不少）；其余情况一律剔除并记 `ERROR`（logger 名
+   `InlineToolCallRecovery`）。思考内容里的信封只剔除、**绝不执行**。定界符在流里被切开也不会漏出半截标记。
+3. **历史侧清洗**：回放前剔除历史里 assistant 正文中残留的信封（**只清洗正文**；`tool_calls[].arguments`
+   里出现同名字样属于数据，绝不改动），避免泄漏被当成本会话的历史反复喂回去。
+
+取舍与边界，请按需预期：
+
+- 极端情况下整条回复就是一个信封（正文几乎全被剔除）⇒ 这一轮可能没有可见正文；日志里有对应的 `ERROR`。
+- 信封出现在被 JSON 转义的字符串里（转义引号 `\"`）时无法可靠还原，走 fail-closed：整块丢弃、不执行。
+- 只认结构不猜语义：工具名不在本次 `tools` 里、或不在 `ChatConfig.toolChoice` 允许范围内
+  （`None` / `Named(x)`）的调用**绝不执行**——恢复通道不会绕过开发者的工具策略。
+- 恢复出来的调用 id 有 `dsml_` 前缀，便于在日志与历史里识别来源。
+- 恢复出来的调用与结构化调用一样会以 `ChatChunk.ToolCallRequest` 出现在流里（`SseHook` 同样能看到），
+  因此 UI 会像正常工具调用那样展示。
+- **资源上限**：单个信封 1 MiB、单个开启标签 4 KiB；超限或结构坏掉时按 fail-closed 处理——丢弃并
+  重同步到下一个标签边界，因此畸形或恶意的上游输出不会拖慢长流，也不会把畸形标签的尾巴当正文。
+- **FIM 补全（`fimStream`）不走工具通道**，也不在该机制范围内。
+
+**逃生舱与退役标准**
+
+默认行为是「恢复执行 + 剔除」。`ChatConfig.inlineToolCallPolicy`（`@ExperimentalDeepseekApi`）提供三档：
+
+| 取值 | 行为 | 适用 |
+| --- | --- | --- |
+| `RECOVER`（默认） | 能完整解析、且工具名通过注册表与 `toolChoice` 白名单 ⇒ 恢复执行；其余剔除 | 绝大多数调用方 |
+| `STRIP` | 只剔除、从不执行 | 宁可少一次工具调用，也绝不让文本里的调用产生副作用 |
+| `PASSTHROUGH` | 完全不干预：正文与历史逐字透传，回放也不清洗 | 应用侧已有自己的解析器，或需要逐字保真 |
+
+选 `PASSTHROUGH` 就等于**放弃「内部语法不出现在用户可见内容里」这条保证**；其余两档的差别只是
+「要不要替模型把调用执行掉」。
+
+这一层是**待退役**的，判据可证伪：上游 issue（#1678 / #1244）关闭**且**一个发布周期内
+`InlineToolCallRecovery` 的 ERROR 日志零命中 ⇒ 默认值降级为 `STRIP`；再一个周期仍零命中 ⇒
+删除恢复执行的代码路径，只保留剔除（剔除留着，因为它同时覆盖聚合网关的转码形态与历史里已经存在的污染）。
+
 #### 安全性
 
 **密钥（API Key）**
