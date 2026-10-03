@@ -2,6 +2,7 @@ package io.github.hatoyuze.deepseek.protocol.api
 
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.Role
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -62,6 +64,37 @@ class DeepseekConcurrencyStressTest {
             )
             assertTrue(chunks.any { it is ChatChunk.Done }, "每个流应以 Done 收尾")
         }
+    }
+
+    /**
+     * 取消风暴后会话注册表必须回到空。
+     *
+     * 守的是 `unregister` 的可取消性：它在 `finally` 里跑，那一刻协程已经处于取消状态，而
+     * `Mutex.withLock` 是可取消的挂起函数——高并发下（锁被占着）它会在拿到锁之前就抛
+     * CancellationException，这条会话就永远留在 `sessions` 里，长生命周期实例内存只增不减。
+     */
+    @Test
+    fun `cancel storm leaves no dead sessions in the registry`() = runBlocking {
+        val gate = CompletableDeferred<Unit>()
+        val backend = GatedBackend {
+            flow {
+                gate.await()
+                emit(ChatChunk.Done(1, 1, 1))
+            }
+        }
+        val core = testCore(singleSession = false, backend = backend, prompt = "sys")
+        val ds = StatelessDeepseek("test-key", core)
+
+        val jobs = (1..200).map { i ->
+            launch(Dispatchers.Default) { ds.chatStream("user-$i").collect { } }
+        }
+        withTimeout(30_000) {
+            while (core.activeSessionCount() < 200) yield()
+        }
+
+        ds.cancelStream()
+        jobs.joinAll()
+        assertEquals(0, core.activeSessionCount(), "取消后会话注册表必须清空，否则长生命周期实例会无限增长")
     }
 
     @Test

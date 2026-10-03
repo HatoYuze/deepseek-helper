@@ -94,11 +94,12 @@ internal fun testCore(
     backend: GatedBackend,
     fimApi: GatedFimApi? = null,
     prompt: String? = null,
+    config: ChatConfig = ChatConfig(),
 ): DeepseekCore = DeepseekCore(
     apiKey = "test-key",
     model = null,
     prompt = prompt,
-    config = ChatConfig(),
+    config = config,
     api = DeepseekApi.STANDARD,
     singleSession = singleSession,
     backend = backend,
@@ -109,7 +110,8 @@ internal fun testCore(
 internal fun statefulDeepseek(
     backend: GatedBackend,
     prompt: String? = null,
+    config: ChatConfig = ChatConfig(),
 ): Deepseek = Deepseek(
     apiKey = "test-key",
-    core = testCore(singleSession = true, backend = backend, prompt = prompt),
+    core = testCore(singleSession = true, backend = backend, prompt = prompt, config = config),
 )
