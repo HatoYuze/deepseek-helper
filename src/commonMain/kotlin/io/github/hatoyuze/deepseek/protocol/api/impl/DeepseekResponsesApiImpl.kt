@@ -3,8 +3,10 @@ package io.github.hatoyuze.deepseek.protocol.api.impl
 import io.github.hatoyuze.deepseek.protocol.api.ChatChunk
 import io.github.hatoyuze.deepseek.protocol.api.ChatConfig
 import io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi
+import io.github.hatoyuze.deepseek.protocol.api.scrubbedForReplay
 import io.github.hatoyuze.deepseek.protocol.api.entity.ContentPart
 import io.github.hatoyuze.deepseek.protocol.api.entity.ImageUrlDetail
+import io.github.hatoyuze.deepseek.protocol.api.entity.InlineToolCallPolicy
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.MessageContent
 import io.github.hatoyuze.deepseek.protocol.api.entity.ResponseFormat
@@ -137,7 +139,16 @@ internal class DeepseekResponsesApiImpl(
         // 官方限制：图片只能出现在 user 消息里；在装配请求体/发起请求前 fail-fast
         messages.requireCompletionsInputAllowed()
 
-        val (instructions, inputMessages) = extractResponsesInstructions(messages)
+        // 回放清洗：历史里 assistant 正文可能残留上游泄漏的内部工具调用信封，回放前剔除，
+        // 避免它被当成本会话自己的历史反复喂回去（agent history self-poison）。
+        // PASSTHROUGH 表示调用方自行后处理正文，因此这里也完全不碰它的历史
+        val replayMessages = if (config.inlineToolCallPolicy == InlineToolCallPolicy.PASSTHROUGH) {
+            messages
+        } else {
+            messages.scrubbedForReplay()
+        }
+
+        val (instructions, inputMessages) = extractResponsesInstructions(replayMessages)
 
         // 未配置或 Enabled 时保持模型默认思考（不发送 reasoning）；
         // Disabled → "none"；WithEffort → 官方 effort 值（high / max）。

@@ -12,22 +12,41 @@ import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekFimApiImpl
 import io.github.hatoyuze.deepseek.protocol.api.impl.requireImagesAllowed
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekResponsesApiImpl
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekStandardApiImpl
+import io.github.hatoyuze.deepseek.protocol.api.entity.InlineToolCallPolicy
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
+import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.protocol.api.entity.UserBalance
 import io.github.hatoyuze.deepseek.toolcall.DEEPSEEK_WEB_SEARCH_TOOL
+import io.github.hatoyuze.deepseek.toolcall.Logger
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolExecutionContext
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolResult
 import io.github.hatoyuze.deepseek.toolcall.pipeline.ToolCallHost
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.Volatile
+
+/** 请求侧不变量告警的日志出口：内容侧另有 `InlineToolCallRecovery` 自己的 logger。 */
+private val coreLogger = Logger("DeepseekCore")
+
+/**
+ * 去重用的参数视图：解析成 [JsonElement] 后比较是**结构性**的（键序、空白无关），
+ * 解析不了就退化成原始字符串比较（与结构化通道的 wire 文本逐字一致时才判等）。
+ */
+private fun parsedArgumentsOf(arguments: String): JsonElement =
+    runCatching { Json.parseToJsonElement(arguments) }.getOrDefault(JsonPrimitive(arguments))
 
 /**
  * Deepseek 客户端共享的内部核心：网络后端、取消机制与流式对话循环。
@@ -101,6 +120,14 @@ internal class DeepseekCore(
         sessions.forEach { it.cancel() }
     }
 
+    /**
+     * 活跃流会话数。
+     *
+     * 只给测试用：`unregister` 在取消路径上如果被跳过，长生命周期实例的 [sessions] 会无限增长，
+     * 而这个集合本身没有可观测出口，因此留一个内部只读视图（不是公开 API）。
+     */
+    internal fun activeSessionCount(): Int = sessions.size
+
     /** 注册新会话；有状态模式下在同一把锁内取消旧会话，保证只有一个活跃流 */
     private suspend fun register(session: StreamSession) {
         sessionLock.withLock {
@@ -114,8 +141,13 @@ internal class DeepseekCore(
     }
 
     private suspend fun unregister(session: StreamSession) {
-        sessionLock.withLock {
-            sessions = sessions - session
+        // 必须 NonCancellable：`finally` 里跑的这一刻协程往往已经处于取消状态，而 `Mutex.lock` 是
+        // 可取消的挂起函数——它会在拿到锁之前就抛 CancellationException，导致这条会话永远留在
+        // `sessions` 里（长生命周期实例上表现为集合无限增长）。锁内没有任何挂起点，不会死锁。
+        withContext(NonCancellable) {
+            sessionLock.withLock {
+                sessions = sessions - session
+            }
         }
     }
 
@@ -224,6 +256,9 @@ internal class DeepseekCore(
  *
  * 失败或取消时回滚本轮自己追加的消息（按引用精确删除，见 `ownMessages`），
  * 不会删除其它来源写入同一张历史的、并不属于本轮的消息。
+ *
+ * 取消时**不冲刷**内容过滤器：被扣留的尾部（至多一个定界符前缀的长度）连同本轮一起丢弃——
+ * 该轮本来就会被回滚，而且它只可能是定界符碎片或畸形信封的尾巴，绝不是已经展示过的正文。
  * [hook] 只收到外层 Flow 可见的事件（含最终累计 Done）。
  *
  * `reasoningContent` 是 Beta 字段（[ExperimentalDeepseekApi]），本函数是库内唯一把**流里的**思考内容
@@ -264,8 +299,30 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
     var committed = false
 
     try {
-        // 工具定义在一次流式对话中不会变化，只取一次
-        val tools = core.toolHost?.getDefinitions()?.ifEmpty { null }
+        // 工具定义在一次流式对话中不会变化，只取一次；host 也一起快照，避免同一轮里
+        // 「tools 用的是旧 host、canExecute 用的是新 host」这种撕裂读
+        val host = core.toolHost
+        val tools = host?.getDefinitions()?.ifEmpty { null }
+        // 已知的上游触发条件（deepseek-ai/DeepSeek-V3#1678）：请求不带 `tools` 而历史里仍有 tool
+        // 轮次时，服务端不会把模型的工具调用语法转成结构化 tool_calls，而是把它当正文原样下发。
+        // 库补不出工具定义（没有 host 就没有 schema），所以这里只把破防点写进日志；
+        // 响应侧的兜底见下方 InlineToolCallRecovery。
+        replayToolChannelDiagnostic(history, tools)?.let { diagnostic ->
+            coreLogger.error { "chat.request $diagnostic" }
+        }
+        // 上游泄漏的处理策略：默认 RECOVER（恢复执行 + 剔除），可用 ChatConfig 显式退出。
+        // PASSTHROUGH 是逃生舱：完全不干预内容与历史，保持改动前的逐字透传
+        val inlineToolCallPolicy = core.config.inlineToolCallPolicy
+
+        // 允许恢复的工具名 = 注册表 ∩ 调用方声明的工具策略。`toolChoice` 是开发者的显式声明
+        // （`None` = 一个都别调、`Named(x)` = 只允许 x），而恢复是**客户端**解释出来的调用，
+        // 服务端无从否决，因此这里必须自己把关（安全评审 HIGH-1）
+        val allowedToolNames = when (val choice = core.config.toolChoice) {
+            null, ToolChoice.Auto, ToolChoice.Required -> tools?.mapTo(mutableSetOf()) { it.name }.orEmpty()
+            ToolChoice.None -> emptySet()
+            is ToolChoice.Named -> tools?.mapNotNullTo(mutableSetOf()) { if (it.name == choice.name) it.name else null }
+                .orEmpty()
+        }
 
         while (iterations < core.config.maxToolIterations) {
             // ★ 检查点 1: 每次 tool-call 循环迭代前
@@ -273,6 +330,43 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
             iterations++
             val pendingToolCalls = mutableListOf<ChatChunk.ToolCallRequest>()
             var hasToolCallInResponse = false
+            // 过滤器的生命周期是「一条模型响应」：信封不跨响应，而 contentBuilder 是整条流共享的，
+            // 两者生命周期不同——复用同一个实例会把上一轮扣留的尾部漏进下一轮
+            val recovery = InlineToolCallRecovery(
+                allowedTools = allowedToolNames,
+                executionDisabledReason = when {
+                    host == null -> "no-tool-host"
+                    inlineToolCallPolicy != InlineToolCallPolicy.RECOVER -> "policy-strip-only"
+                    else -> null
+                },
+            )
+            // 本轮结构化 tool_calls 的指纹：用来给恢复出来的调用去重（网关可能同时下发两条通道，
+            // 不去重就会把同一个副作用执行两次）
+            val structuredCalls = mutableListOf<Pair<String, JsonElement>>()
+            // 恢复出来的调用**攒到本轮收尾**再注入：信封在正文之后才出现，立刻 emit 会让工具调用
+            // 排在自己那句正文前面；攒着也才能与结构化通道做去重
+            val recoveredCalls = mutableListOf<ToolCall>()
+
+            // 收尾时统一注入：去重 + 保证「先正文、后工具调用」的发射顺序
+            suspend fun adoptRecovered(calls: List<ToolCall>) {
+                if (calls.isEmpty()) return
+                // 取消在 collect 与本行之间落地时，先在这里抛出：钩子不能看到 Flow 看不到的事件
+                currentCoroutineContext().ensureActive()
+                for (call in calls) {
+                    val recoveredArguments = parsedArgumentsOf(call.arguments)
+                    if (structuredCalls.any { it.first == call.name && it.second == recoveredArguments }) {
+                        coreLogger.error {
+                            "内联信封与结构化 tool_calls 重复（同名同参数），已跳过恢复出来的那次：${call.name}"
+                        }
+                        continue
+                    }
+                    val request = ChatChunk.ToolCallRequest(call)
+                    pendingToolCalls += request
+                    hasToolCallInResponse = true
+                    hook?.onChunk(request)
+                    emit(request)
+                }
+            }
 
             core.backend.completions(
                 // 必须是拷贝：序列化期间 handleToolCalls 会继续往 history 追加，别名会导致并发修改
@@ -284,14 +378,33 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
                 // ★ 检查点 2: 每个 SSE chunk 到达时
                 if (session.cancelled) return@collect
                 when (chunk) {
-                    is ChatChunk.ContentDelta -> {
+                    is ChatChunk.ContentDelta -> if (inlineToolCallPolicy == InlineToolCallPolicy.PASSTHROUGH) {
+                        // 逃生舱：完全不干预，与改动前逐字一致
                         if (chunk.content.isNotEmpty()) contentBuilder.append(chunk.content)
                         chunk.reasoningContent?.let { reasoningBuilder.append(it) }
                         hook?.onChunk(chunk)
                         emit(chunk)
+                    } else {
+                        val filtered = if (chunk.content.isEmpty()) null else recovery.acceptContent(chunk.content)
+                        if (filtered != null) recoveredCalls += filtered.recovered
+                        // 思考通道只剔除信封、绝不执行：thinking 是模型的内心草稿。
+                        // 过滤后为空串时归一成 null（与历史里「空串一律归一成 null」同一口径），
+                        // 免得下游为一段被剔干净的思考渲染一个空气泡
+                        val reasoning = chunk.reasoningContent
+                            ?.let { recovery.acceptThinking(it) }
+                            ?.takeIf { it.isNotEmpty() }
+                        val visible = filtered?.visible.orEmpty()
+                        if (visible.isNotEmpty() || reasoning != null) {
+                            if (visible.isNotEmpty()) contentBuilder.append(visible)
+                            reasoning?.let { reasoningBuilder.append(it) }
+                            val out = ChatChunk.ContentDelta(visible, reasoning)
+                            hook?.onChunk(out)
+                            emit(out)
+                        }
                     }
                     is ChatChunk.ToolCallRequest -> {
                         hasToolCallInResponse = true
+                        structuredCalls += chunk.call.name to parsedArgumentsOf(chunk.call.arguments)
                         pendingToolCalls.add(chunk)
                         hook?.onChunk(chunk)
                         emit(chunk)
@@ -313,17 +426,51 @@ internal suspend fun FlowCollector<ChatChunk>.streamLoop(
             // After collect: check if cancelled and exit
             if (session.cancelled) return
 
+            // 冲刷两个过滤器：信封可能在最后一个 delta 之后才补齐，也可能永远不补齐。必须在
+            // `hasToolCallInResponse` 判定之前结算，否则「末尾才到达的调用」会被当成没有工具调用而收尾。
+            // PASSTHROUGH 下过滤器从未被喂过，这里的冲刷天然是空操作
+            val tail = recovery.flushContent()
+            recoveredCalls += tail.recovered
+            if (tail.visible.isNotEmpty()) {
+                contentBuilder.append(tail.visible)
+                val out = ChatChunk.ContentDelta(tail.visible, null)
+                hook?.onChunk(out)
+                emit(out)
+            }
+            val tailThinking = recovery.flushThinking()
+            if (tailThinking.isNotEmpty()) {
+                reasoningBuilder.append(tailThinking)
+                val out = ChatChunk.ContentDelta("", tailThinking)
+                hook?.onChunk(out)
+                emit(out)
+            }
+            if (recovery.recoveredEnvelopes > 0 || recovery.droppedEnvelopes > 0 || recovery.thinkingEnvelopes > 0) {
+                coreLogger.error {
+                    "本轮响应检测到内联工具调用信封：recovered=${recovery.recoveredEnvelopes} " +
+                        "dropped=${recovery.droppedEnvelopes} thinking=${recovery.thinkingEnvelopes} " +
+                        "droppedChars=${recovery.droppedChars}"
+                }
+            }
+            // 正文/思考都发完了，再注入恢复出来的工具调用：保持「内容增量 → 工具调用请求」的顺序
+            adoptRecovered(recoveredCalls)
+
             if (!hasToolCallInResponse) break // No tool calls → stream is truly done
 
             // ★ 检查点 3: 工具调用执行前
             if (session.cancelled) return
             val toolWriteStart = history.size
-            val toolResults = core.handleToolCalls(
-                pendingToolCalls,
-                history,
-                reasoningContent = reasoningBuilder.toString().ifEmpty { null },
-            )
-            ownMessages += history.subList(toolWriteStart, history.size)
+            // bookkeeping 必须放 finally：`handleToolCalls` 先写 assistant(tool_calls) 再逐个执行工具，
+            // 中途被取消（工具挂起时抛 CancellationException）会直接跳出，若不在这里记账，那条
+            // assistant(tool_calls) 就既不在回滚范围内、也永远等不到配对的 tool 结果
+            val toolResults = try {
+                core.handleToolCalls(
+                    pendingToolCalls,
+                    history,
+                    reasoningContent = reasoningBuilder.toString().ifEmpty { null },
+                )
+            } finally {
+                ownMessages += history.subList(toolWriteStart, history.size)
+            }
             // 思考内容按轮归属：这一轮已经随 assistant(tool_calls) 写进历史，下一轮的思考要重新累积。
             //
             // **只有真的写下了那条 assistant(tool_calls) 才清**：`handleToolCalls` 唯一的空返回路径是

@@ -102,6 +102,7 @@ public final class io/github/hatoyuze/deepseek/protocol/api/ChatConfig {
 	public fun <init> ()V
 	public final fun getEnableWebSearch ()Z
 	public final fun getIncludeUsage ()Z
+	public final fun getInlineToolCallPolicy ()Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;
 	public final fun getLogprobs ()Ljava/lang/Boolean;
 	public final fun getMaxTokens ()Ljava/lang/Integer;
 	public final fun getMaxToolIterations ()I
@@ -114,6 +115,7 @@ public final class io/github/hatoyuze/deepseek/protocol/api/ChatConfig {
 	public final fun getTopP ()Ljava/lang/Double;
 	public final fun setEnableWebSearch (Z)V
 	public final fun setIncludeUsage (Z)V
+	public final fun setInlineToolCallPolicy (Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;)V
 	public final fun setLogprobs (Ljava/lang/Boolean;)V
 	public final fun setMaxTokens (Ljava/lang/Integer;)V
 	public final fun setMaxToolIterations (I)V
@@ -683,6 +685,15 @@ public final class io/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetai
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/ImageUrlDetail$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy : java/lang/Enum {
+	public static final field PASSTHROUGH Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;
+	public static final field RECOVER Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;
+	public static final field STRIP Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;
+	public static fun values ()[Lio/github/hatoyuze/deepseek/protocol/api/entity/InlineToolCallPolicy;
 }
 
 public final class io/github/hatoyuze/deepseek/protocol/api/entity/Message {

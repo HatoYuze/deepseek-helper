@@ -1,5 +1,6 @@
 package io.github.hatoyuze.deepseek.protocol.api.entity
 
+import io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -96,6 +97,53 @@ public sealed interface StopToken {
         is Single -> JsonPrimitive(word)
         is Multiple -> buildJsonArray { words.forEach { add(JsonPrimitive(it)) } }
     }
+}
+
+/**
+ * 上游把**内部工具调用语法**（信封）当正文下发时的处理策略，配置入口是
+ * [io.github.hatoyuze.deepseek.protocol.api.ChatConfig.inlineToolCallPolicy]。
+ *
+ * 上游偶发把模型的原生工具调用语法当正文下发（`finish_reason=stop`、`tool_calls=null`，
+ * 而官方文档从未定义该语法）。默认策略 [RECOVER] 把它恢复成真正的工具调用并走既有工具管道执行，
+ * 其余情况一律剔除——机制与取舍见 `README.md` 的「上游工具调用语法泄漏（内部信封）」。
+ *
+ * ## 这个开关是逃生舱，这一层也是**待退役**的
+ *
+ * 默认值针对的是上游已知缺陷
+ * [deepseek-ai/DeepSeek-V3#1678](https://github.com/deepseek-ai/DeepSeek-V3/issues/1678)（确定性）
+ * 与 [#1244](https://github.com/deepseek-ai/DeepSeek-V3/issues/1244)（间歇性）。降级判据是
+ * **可证伪的**，不是"以后再说"：
+ *
+ * 1. 上游 issue 关闭，**且**一个发布周期内 `InlineToolCallRecovery` 的 ERROR 日志零命中
+ *    ⇒ 默认值降级为 [STRIP]（只剔除、不执行）；
+ * 2. 再一个周期仍零命中 ⇒ 删除恢复执行的代码路径，只保留 [STRIP] 行为——清洗本身留着，
+ *    因为它同时覆盖聚合网关的转码形态与历史里已经存在的污染。
+ *
+ * @see io.github.hatoyuze.deepseek.protocol.api.ChatConfig.inlineToolCallPolicy
+ */
+@ExperimentalDeepseekApi
+public enum class InlineToolCallPolicy {
+    /**
+     * 默认。正文里能完整解析、且工具名同时通过注册表与 `toolChoice` 白名单的信封 → 恢复成工具调用
+     * 并走既有管道执行；其余情况（未注册、未闭合、参数非法、策略不允许）一律剔除并记 `ERROR`。
+     */
+    RECOVER,
+
+    /**
+     * 只剔除、从不执行。
+     *
+     * 模型这一轮的调用意图会丢失（表现为正文被削掉，极端情况下整轮为空）；适合"宁可少一次工具调用，
+     * 也绝不让文本里的调用产生副作用"的场景。
+     */
+    STRIP,
+
+    /**
+     * 完全不干预：信封原样进正文、原样进历史，回放前也不清洗。
+     *
+     * 只给自行后处理正文的上层使用（例如应用侧已有自己的解析器，或需要逐字保真地展示模型输出）。
+     * 选它就意味着**放弃了"内部语法不出现在用户可见内容里"这条保证**。
+     */
+    PASSTHROUGH,
 }
 
 /**

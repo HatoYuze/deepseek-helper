@@ -4,9 +4,11 @@ import io.github.hatoyuze.deepseek.protocol.api.ChatChunk
 import io.github.hatoyuze.deepseek.protocol.api.entity.ChatCompletionChunk
 import io.github.hatoyuze.deepseek.protocol.api.ChatConfig
 import io.github.hatoyuze.deepseek.protocol.api.ExperimentalDeepseekApi
+import io.github.hatoyuze.deepseek.protocol.api.scrubbedForReplay
 import io.github.hatoyuze.deepseek.protocol.api.entity.FinishReason
 import io.github.hatoyuze.deepseek.protocol.api.entity.Message
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
+import io.github.hatoyuze.deepseek.protocol.api.entity.InlineToolCallPolicy
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
 import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.toolcall.executor.ToolCall
@@ -75,6 +77,15 @@ internal class DeepseekStandardApiImpl(
         // （而不是把一次注定 400 的往返留给调用方）
         messages.requireCompletionsInputAllowed()
 
+        // 回放清洗：历史里 assistant 正文可能残留上游泄漏的内部工具调用信封，回放前剔除，
+        // 避免它被当成本会话自己的历史反复喂回去（agent history self-poison）。
+        // PASSTHROUGH 表示调用方自行后处理正文，因此这里也完全不碰它的历史
+        val replayMessages = if (config.inlineToolCallPolicy == InlineToolCallPolicy.PASSTHROUGH) {
+            messages
+        } else {
+            messages.scrubbedForReplay()
+        }
+
         // thinking 仅在非默认状态时发送
         val thinking = when (val mode = config.thinkingMode) {
             null, is ThinkingMode.Enabled -> null
@@ -94,7 +105,7 @@ internal class DeepseekStandardApiImpl(
             // （"The `reasoning_content` in the thinking mode must be passed back to the API"）；
             // 请求不带 `tools` 时服务端忽略该字段（"even if passed to the API, it will be
             // ignored"）。因此这里既不按 tools 是否存在分流，也绝不能剥离该字段。
-            messages = messages,
+            messages = replayMessages,
             model = model.id,
             maxTokens = config.maxTokens,
             temperature = config.temperature,

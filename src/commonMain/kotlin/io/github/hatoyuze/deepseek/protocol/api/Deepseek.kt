@@ -9,6 +9,7 @@ import io.github.hatoyuze.deepseek.protocol.api.entity.StopToken
 import io.github.hatoyuze.deepseek.protocol.api.entity.ThinkingMode
 import io.github.hatoyuze.deepseek.protocol.api.entity.ToolChoice
 import io.github.hatoyuze.deepseek.protocol.api.impl.DeepseekApiBackend
+import io.github.hatoyuze.deepseek.protocol.api.entity.InlineToolCallPolicy
 import io.github.hatoyuze.deepseek.protocol.api.entity.Model
 import io.github.hatoyuze.deepseek.protocol.net.DeepseekHttpClientPool
 import io.github.hatoyuze.deepseek.protocol.net.normalizeBaseUrl
@@ -104,6 +105,22 @@ public class ChatConfig {
 
     /** 工具调用最大迭代次数，防止无限循环，默认 `15` */
     public var maxToolIterations: Int = 15
+
+    /**
+     * 上游把**内部工具调用语法**（信封）当正文下发时的处理策略，默认
+     * [InlineToolCallPolicy.RECOVER]（恢复执行 + 剔除）。
+     *
+     * 这是面向上游已知缺陷（`deepseek-ai/DeepSeek-V3#1678` / `#1244`）的**逃生舱**：
+     * 默认值修掉线上泄漏，而自行后处理正文的上层（例如应用侧已有自己的解析器、
+     * 或需要逐字保真地展示模型输出）可以显式退出。
+     *
+     * 与其它 [ChatConfig] 字段一致：**请在开始收集流之前设置**，同一实例在流中途被改动
+     * 不保证对进行中的请求生效（`ChatConfig` 是共享的可变对象）。
+     *
+     * @see InlineToolCallPolicy
+     */
+    @property:ExperimentalDeepseekApi
+    public var inlineToolCallPolicy: InlineToolCallPolicy = InlineToolCallPolicy.RECOVER
 }
 
 /**
